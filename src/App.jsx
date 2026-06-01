@@ -149,6 +149,14 @@ function getValue(record, key) {
   return key === 'created_at' || key === 'last_checked' || key === 'date' || key === 'date_found' ? formatDate(value) : String(value)
 }
 
+function normalizeUrl(value) {
+  if (!value) return null
+  const s = String(value).trim()
+  if (!s) return null
+  if (/^https?:\/\//i.test(s)) return s
+  return `https://${s}`
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('master')
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -438,9 +446,26 @@ export default function App() {
               <tbody>
                 {records.map((record) => (
                   <tr key={record.id}>
-                    {activeConfig.tableColumns.map((column) => (
-                      <td key={column.key}>{getValue(record, column.key)}</td>
-                    ))}
+                    {activeConfig.tableColumns.map((column) => {
+                      const raw = record?.[column.key]
+                      const display = getValue(record, column.key)
+                      const isLinkKey = ['website', 'booking_link', 'link'].includes(column.key)
+
+                      if (isLinkKey && raw) {
+                        const href = normalizeUrl(raw)
+                        if (href) {
+                          return (
+                            <td key={column.key}>
+                              <a href={href} target="_blank" rel="noopener noreferrer" className="tableLink">
+                                {display}
+                              </a>
+                            </td>
+                          )
+                        }
+                      }
+
+                      return <td key={column.key}>{display}</td>
+                    })}
                     <td>
                       <button type="button" className="tableButton" onClick={() => handleEdit(record)}>
                         Edit
