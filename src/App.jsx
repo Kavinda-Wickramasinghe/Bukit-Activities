@@ -118,7 +118,7 @@ const tabConfigs = {
     tableColumns: [
       { key: 'created_at', label: 'Created' },
       { key: 'group_name', label: 'Group Name' },
-      { key: 'category', label: 'Category' },
+      { key: 'link', label: 'Link' },
       { key: 'purpose', label: 'Purpose' },
     ],
     autocompleteFields: ['group_name', 'category', 'link', 'purpose', 'notes'],
