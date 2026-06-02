@@ -45,9 +45,10 @@ code{background:#f3f4f6;padding:.15rem .35rem;border-radius:.25rem}
 .sectionHeading h2,.tabSection h2{margin:0;color:#123a2a}
 .sectionHeading p{margin:8px 0 0;color:var(--muted);line-height:1.5}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
-input{padding:12px 13px;border:1px solid #cde8db;border-radius:14px;background:#fff;color:#000;font-size:14px;outline:none;transition:border-color .18s ease, box-shadow .18s ease}
+input,select{padding:12px 13px;border:1px solid #cde8db;border-radius:14px;background:#fff;color:#000;font-size:14px;outline:none;transition:border-color .18s ease, box-shadow .18s ease}
 input::placeholder{color:#8b96a1}
-input:focus{border-color:var(--green-500);box-shadow:0 0 0 4px rgba(47,207,139,.14)}
+input:focus,select:focus{border-color:var(--green-500);box-shadow:0 0 0 4px rgba(47,207,139,.14)}
+select{appearance:auto}
 label{display:block;font-size:12px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;color:#000;margin-bottom:8px}
 .field{display:flex;flex-direction:column}
 .errorText{color:#b91c1c;font-size:12px;margin-top:6px}
@@ -59,6 +60,12 @@ label{display:block;font-size:12px;font-weight:900;letter-spacing:.09em;text-tra
 button{padding:10px 14px;border-radius:12px;border:0;background:#e7f7ef;color:var(--green-700);cursor:pointer;font-weight:800;transition:transform .16s ease, box-shadow .16s ease, background .16s ease}
 button:hover{transform:translateY(-1px)}
 button.primary{background:linear-gradient(135deg,var(--green-600),#2fd088);color:white;box-shadow:0 14px 24px rgba(17,138,94,.24)}
+.tableActions{display:flex;gap:8px;flex-wrap:wrap}
+.tableButton.dangerButton{background:linear-gradient(135deg,#ffe8e8,#ffd0d0);color:#a61b1b}
+.tableLink{color:var(--green-800);font-weight:800;text-decoration:none;border-bottom:1px solid rgba(19,134,95,.28);padding-bottom:1px;word-break:break-word}
+.tableLink:hover{text-decoration:underline}
+.weekSummaryCard{display:flex;flex-direction:column;gap:12px}
+.weekRange{display:inline-flex;align-items:center;align-self:flex-start;padding:8px 12px;border-radius:999px;background:#effdf4;border:1px solid #c7f5d8;color:#0f7a46;font-weight:800}
 
 .tabSection{margin-top:24px}
 .tabHeading{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-bottom:14px}

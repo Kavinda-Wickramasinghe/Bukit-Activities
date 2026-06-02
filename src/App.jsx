@@ -8,11 +8,11 @@ const tabConfigs = {
     description: 'Core list of activities, places, and sources.',
     defaults: {
       last_checked: '',
+      schedule: '',
       category: '',
       venue: '',
       area: '',
       activity: '',
-      schedule: '',
       cost: '',
       website: '',
       whatsapp: '',
@@ -24,7 +24,7 @@ const tabConfigs = {
       { name: 'venue', label: 'Venue' },
       { name: 'area', label: 'Area' },
       { name: 'activity', label: 'Activity' },
-      { name: 'schedule', label: 'Schedule' },
+      { name: 'schedule', label: 'Schedule', type: 'datetime-local' },
       { name: 'cost', label: 'Cost' },
       { name: 'website', label: 'Website' },
       { name: 'whatsapp', label: 'WhatsApp' },
@@ -33,44 +33,36 @@ const tabConfigs = {
     ],
     tableColumns: [
       { key: 'last_checked', label: 'Last Checked' },
+      { key: 'schedule', label: 'Schedule' },
       { key: 'category', label: 'Category' },
       { key: 'venue', label: 'Venue' },
       { key: 'activity', label: 'Activity' },
       { key: 'area', label: 'Area' },
+      { key: 'website', label: 'Website' },
+      { key: 'whatsapp', label: 'WhatsApp' },
+      { key: 'booking_link', label: 'Booking Link' },
     ],
-    autocompleteFields: ['category', 'venue', 'area', 'activity', 'schedule', 'cost', 'website', 'whatsapp', 'booking_link', 'why_might_care'],
+    autocompleteFields: ['category', 'venue', 'area', 'activity', 'website', 'whatsapp'],
     requiredFields: ['venue', 'activity'],
   },
   week: {
     label: 'This Week',
-    table: 'this_week',
-    description: 'Track current week plans and live activities.',
-    defaults: {
-      date: '',
-      time: '',
-      activity: '',
-      venue: '',
-      cost: '',
-      why_go: '',
-    },
-    fields: [
-      { name: 'date', label: 'Date', type: 'date' },
-      { name: 'time', label: 'Time' },
-      { name: 'activity', label: 'Activity' },
-      { name: 'venue', label: 'Venue' },
-      { name: 'cost', label: 'Cost' },
-      { name: 'why_go', label: 'Why Go' },
-    ],
+    table: 'master_list',
+    description: 'Read-only week view derived from master list schedule timestamps.',
+    defaults: {},
+    fields: [],
     tableColumns: [
-      { key: 'created_at', label: 'Created' },
-      { key: 'date', label: 'Date' },
-      { key: 'time', label: 'Time' },
+      { key: 'schedule', label: 'Schedule' },
+      { key: 'category', label: 'Category' },
       { key: 'activity', label: 'Activity' },
       { key: 'venue', label: 'Venue' },
-      { key: 'cost', label: 'Cost' },
+      { key: 'area', label: 'Area' },
+      { key: 'website', label: 'Website' },
+      { key: 'whatsapp', label: 'WhatsApp' },
+      { key: 'booking_link', label: 'Booking Link' },
     ],
-    autocompleteFields: ['time', 'activity', 'venue', 'why_go'],
-    requiredFields: ['date', 'activity'],
+    autocompleteFields: [],
+    requiredFields: [],
   },
   discoveries: {
     label: 'New Discoveries',
@@ -143,10 +135,55 @@ function formatDate(value) {
   })
 }
 
+function formatDateTime(value) {
+  if (!value) return '—'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+function toDateTimeLocalValue(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 16)
+  const adjusted = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+  return adjusted.toISOString().slice(0, 16)
+}
+
+function startOfWeekMonday(value = new Date()) {
+  const date = new Date(value)
+  date.setHours(0, 0, 0, 0)
+  const day = date.getDay()
+  const offset = day === 0 ? -6 : 1 - day
+  date.setDate(date.getDate() + offset)
+  return date
+}
+
+function addDays(value, days) {
+  const date = new Date(value)
+  date.setHours(0, 0, 0, 0)
+  date.setDate(date.getDate() + days)
+  return date
+}
+
+function isWithinRange(value, start, end) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return false
+  return date >= start && date < end
+}
+
 function getValue(record, key) {
   const value = record?.[key]
   if (value === null || value === undefined || value === '') return '—'
-  return key === 'created_at' || key === 'last_checked' || key === 'date' || key === 'date_found' ? formatDate(value) : String(value)
+  if (key === 'schedule' || key === 'created_at' || key === 'last_checked') return formatDateTime(value)
+  if (key === 'date' || key === 'date_found') return formatDate(value)
+  return String(value)
 }
 
 function normalizeUrl(value) {
@@ -155,6 +192,39 @@ function normalizeUrl(value) {
   if (!s) return null
   if (/^https?:\/\//i.test(s)) return s
   return `https://${s}`
+}
+
+function normalizeLinkHref(value, key) {
+  if (!value) return null
+  const s = String(value).trim()
+  if (!s) return null
+
+  if (key === 'whatsapp') {
+    if (/^https?:\/\//i.test(s)) return s
+    const digits = s.replace(/\D/g, '')
+    if (digits.length >= 8) {
+      return `https://wa.me/${digits}`
+    }
+  }
+
+  return normalizeUrl(s)
+}
+
+function getLookupValues(form, lookupOptions, fieldName) {
+  const lookupMap = {
+    category: lookupOptions.categories,
+    activity: lookupOptions.activities,
+    area: lookupOptions.areas,
+    venue: lookupOptions.venues,
+  }
+
+  const values = lookupMap[fieldName] || []
+  const currentValue = form[fieldName]
+  if (currentValue && !values.includes(currentValue)) {
+    return [currentValue, ...values]
+  }
+
+  return values
 }
 
 export default function App() {
@@ -166,6 +236,12 @@ export default function App() {
   const [errors, setErrors] = useState({})
   const [message, setMessage] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [lookupOptions, setLookupOptions] = useState({
+    categories: [],
+    activities: [],
+    areas: [],
+    venues: [],
+  })
 
   const activeConfig = tabConfigs[activeTab]
 
@@ -182,6 +258,34 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab])
 
+  useEffect(() => {
+    if (!hasSupabaseKeys) return
+
+    async function fetchLookupOptions() {
+      const [categoriesResult, activitiesResult, areasResult, venuesResult] = await Promise.all([
+        supabase.from('categories').select('name').order('name', { ascending: true }),
+        supabase.from('activities').select('name').order('name', { ascending: true }),
+        supabase.from('areas').select('name').order('name', { ascending: true }),
+        supabase.from('venues').select('name').order('name', { ascending: true }),
+      ])
+
+      const lookupError = [categoriesResult, activitiesResult, areasResult, venuesResult].find((result) => result.error)
+      if (lookupError) {
+        setMessage({ type: 'error', text: lookupError.error?.message || 'Failed to load lookup dropdowns' })
+        return
+      }
+
+      setLookupOptions({
+        categories: categoriesResult.data?.map((item) => item.name).filter(Boolean) || [],
+        activities: activitiesResult.data?.map((item) => item.name).filter(Boolean) || [],
+        areas: areasResult.data?.map((item) => item.name).filter(Boolean) || [],
+        venues: venuesResult.data?.map((item) => item.name).filter(Boolean) || [],
+      })
+    }
+
+    fetchLookupOptions()
+  }, [])
+
   async function fetchRecords(tabId = activeTab) {
     const config = tabConfigs[tabId]
     if (!config) return
@@ -191,7 +295,7 @@ export default function App() {
       const { data, error } = await supabase
         .from(config.table)
         .select('*')
-        .order(config.table === 'master_list' ? 'last_checked' : 'created_at', { ascending: false })
+        .order(config.table === 'master_list' ? 'schedule' : 'created_at', { ascending: false })
         .order('id', { ascending: false })
 
       if (error) {
@@ -242,6 +346,7 @@ export default function App() {
 
   async function handleSubmit() {
     if (!activeConfig) return
+    if (activeTab === 'week') return
 
     const nextErrors = validate()
     if (Object.keys(nextErrors).length) {
@@ -256,6 +361,7 @@ export default function App() {
 
     if (activeConfig.table === 'master_list') {
       payload.last_checked = new Date().toISOString()
+      payload.schedule = form.schedule ? new Date(form.schedule).toISOString() : null
     }
 
     try {
@@ -293,9 +399,41 @@ export default function App() {
 
   function handleEdit(record) {
     setEditingId(record.id)
-    setForm({ id: record.id, ...activeConfig.defaults, ...record })
+    const nextForm = { id: record.id, ...activeConfig.defaults, ...record }
+    if (activeTab === 'master') {
+      nextForm.schedule = toDateTimeLocalValue(record.schedule)
+    }
+    setForm(nextForm)
     setErrors({})
     setMessage(null)
+  }
+
+  async function handleDelete(record) {
+    if (!record?.id || activeTab !== 'master') return
+
+    const label = record.activity || record.venue || 'this row'
+    const confirmed = window.confirm(`Delete ${label} from the master list?`)
+    if (!confirmed) return
+
+    try {
+      const { error } = await supabase.from('master_list').delete().eq('id', record.id)
+
+      if (error) {
+        setMessage({ type: 'error', text: error.message || 'Delete failed' })
+        return
+      }
+
+      setMessage({ type: 'success', text: 'Master row deleted successfully' })
+      await fetchRecords('master')
+
+      if (editingId === record.id) {
+        resetForm()
+      }
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message || String(err) })
+    }
+
+    setTimeout(() => setMessage(null), 3500)
   }
 
   function resetForm() {
@@ -314,6 +452,13 @@ export default function App() {
       return acc
     }, {})
   }, [activeConfig, records])
+
+  const weekStart = startOfWeekMonday(new Date())
+  const weekEnd = addDays(weekStart, 7)
+  const weekLabel = `${weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} - ${addDays(weekStart, 6).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`
+  const visibleRecords = activeTab === 'week'
+    ? records.filter((record) => isWithinRange(record?.schedule, weekStart, weekEnd))
+    : records
 
   return (
     <div className={`appShell ${sidebarOpen ? 'sidebarOpen' : ''}`}>
@@ -372,65 +517,101 @@ export default function App() {
           </div>
         </section>
 
-        <section className="formCard">
-          <div className="sectionHeading">
-            <div>
-              <h2>{editingId ? `Edit ${activeConfig.label}` : `Add ${activeConfig.label}`}</h2>
-              <p>Labels stay above the fields, and matching values from the database appear as suggestions while you type.</p>
-            </div>
-            <button type="button" onClick={resetForm}>Reset</button>
+        {message && (
+          <div className={`toast ${message.type === 'success' ? 'success' : 'error'}`} role="status">
+            {message.text}
           </div>
+        )}
 
-          {message && (
-            <div className={`toast ${message.type === 'success' ? 'success' : 'error'}`} role="status">
-              {message.text}
+        {activeTab === 'week' ? (
+          <section className="formCard weekSummaryCard">
+            <div className="sectionHeading">
+              <div>
+                <h2>This Week View</h2>
+                <p>Read-only rows pulled from master list records whose schedule falls between Monday and Sunday.</p>
+              </div>
             </div>
-          )}
+            <div className="weekRange">Week of {weekLabel}</div>
+          </section>
+        ) : (
+          <section className="formCard">
+            <div className="sectionHeading">
+              <div>
+                <h2>{editingId ? `Edit ${activeConfig.label}` : `Add ${activeConfig.label}`}</h2>
+                <p>Labels stay above the fields, and matching values from the database appear as suggestions while you type.</p>
+              </div>
+              <button type="button" onClick={resetForm}>Reset</button>
+            </div>
 
-          <div className="grid">
-            {activeConfig.fields.map((field) => {
-              const listId = suggestionsByField[field.name]?.length ? `${activeTab}-${field.name}-suggestions` : undefined
-              return (
-                <div key={field.name} className="field">
-                  <label htmlFor={field.name}>{field.label}</label>
-                  <input
-                    id={field.name}
-                    name={field.name}
-                    type={field.type || 'text'}
-                    placeholder={field.label}
-                    value={form[field.name] ?? ''}
-                    onChange={handleChange}
-                    list={listId}
-                  />
-                  {listId && (
-                    <datalist id={listId}>
-                      {suggestionsByField[field.name].map((value) => (
-                        <option key={value} value={value} />
-                      ))}
-                    </datalist>
-                  )}
-                  {errors[field.name] && <div className="errorText">{errors[field.name]}</div>}
-                </div>
-              )
-            })}
-          </div>
+            <div className="grid">
+              {activeConfig.fields.map((field) => {
+                const listId = suggestionsByField[field.name]?.length ? `${activeTab}-${field.name}-suggestions` : undefined
+                const isLookupField = activeTab === 'master' && ['category', 'activity', 'area', 'venue'].includes(field.name)
+                const lookupValues = isLookupField ? getLookupValues(form, lookupOptions, field.name) : []
+                return (
+                  <div key={field.name} className="field">
+                    <label htmlFor={field.name}>{field.label}</label>
+                    {isLookupField ? (
+                      <select
+                        id={field.name}
+                        name={field.name}
+                        value={form[field.name] ?? ''}
+                        onChange={handleChange}
+                      >
+                        <option value="">Select {field.label.toLowerCase()}</option>
+                        {lookupValues.map((value) => (
+                          <option key={value} value={value}>
+                            {value}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        id={field.name}
+                        name={field.name}
+                        type={field.type || 'text'}
+                        placeholder={field.label}
+                        value={form[field.name] ?? ''}
+                        onChange={handleChange}
+                        list={listId}
+                      />
+                    )}
+                    {listId && !isLookupField && (
+                      <datalist id={listId}>
+                        {suggestionsByField[field.name].map((value) => (
+                          <option key={value} value={value} />
+                        ))}
+                      </datalist>
+                    )}
+                    {errors[field.name] && <div className="errorText">{errors[field.name]}</div>}
+                  </div>
+                )
+              })}
+            </div>
 
-          <div className="actionRow">
-            <button className="primary" type="button" onClick={handleSubmit}>
-              {editingId ? 'Update Row' : 'Add Row'}
-            </button>
-            {editingId && (
-              <button type="button" onClick={resetForm}>
-                Cancel Edit
+            <div className="actionRow">
+              <button className="primary" type="button" onClick={handleSubmit}>
+                {editingId ? 'Update Row' : 'Add Row'}
               </button>
-            )}
-          </div>
-        </section>
+              {editingId && (
+                <button type="button" onClick={resetForm}>
+                  Cancel Edit
+                </button>
+              )}
+            </div>
+          </section>
+        )}
 
         <section className="tabSection">
           <div className="tabHeading">
-            <h2>{activeConfig.label} rows</h2>
-            <p>{records.length} record{records.length === 1 ? '' : 's'} loaded from Supabase</p>
+            <div>
+              <h2>{activeConfig.label} rows</h2>
+              {activeTab === 'week' ? (
+                <p>{visibleRecords.length} record{visibleRecords.length === 1 ? '' : 's'} found in the current Monday-to-Sunday week</p>
+              ) : (
+                <p>{records.length} record{records.length === 1 ? '' : 's'} loaded from Supabase</p>
+              )}
+            </div>
           </div>
 
           <div className="tableWrap">
@@ -440,11 +621,11 @@ export default function App() {
                   {activeConfig.tableColumns.map((column) => (
                     <th key={column.key}>{column.label}</th>
                   ))}
-                  <th>Actions</th>
+                  {activeTab !== 'week' && <th>Actions</th>}
                 </tr>
               </thead>
               <tbody>
-                {records.map((record) => (
+                {visibleRecords.map((record) => (
                   <tr key={record.id}>
                     {activeConfig.tableColumns.map((column) => {
                       const raw = record?.[column.key]
@@ -452,7 +633,7 @@ export default function App() {
                       const isLinkKey = ['website', 'booking_link', 'link'].includes(column.key)
 
                       if (isLinkKey && raw) {
-                        const href = normalizeUrl(raw)
+                        const href = normalizeLinkHref(raw, column.key)
                         if (href) {
                           return (
                             <td key={column.key}>
@@ -466,17 +647,26 @@ export default function App() {
 
                       return <td key={column.key}>{display}</td>
                     })}
-                    <td>
-                      <button type="button" className="tableButton" onClick={() => handleEdit(record)}>
-                        Edit
-                      </button>
-                    </td>
+                    {activeTab !== 'week' && (
+                      <td className="tableActions">
+                        <button type="button" className="tableButton" onClick={() => handleEdit(record)}>
+                          Edit
+                        </button>
+                        {activeTab === 'master' && (
+                          <button type="button" className="tableButton dangerButton" onClick={() => handleDelete(record)}>
+                            Delete
+                          </button>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
-                {!records.length && (
+                {!visibleRecords.length && (
                   <tr>
-                    <td colSpan={activeConfig.tableColumns.length + 1} className="emptyCell">
-                      No records yet. Add the first row using the form above.
+                    <td colSpan={activeConfig.tableColumns.length + (activeTab !== 'week' ? 1 : 0)} className="emptyCell">
+                      {activeTab === 'week'
+                        ? 'No master rows fall inside the current Monday-to-Sunday week.'
+                        : 'No records yet. Add the first row using the form above.'}
                     </td>
                   </tr>
                 )}

@@ -38,3 +38,5 @@ Supabase Row Level Security (RLS)
 	- Ensure your client uses the anon (public) key for browser clients and that users are authenticated if your policies require it.
 
 I added `supabase_policy.sql` with sample policies you can apply in the Supabase SQL editor.
+
+Run Local Host: npm run dev -- --host 0.0.0.0
