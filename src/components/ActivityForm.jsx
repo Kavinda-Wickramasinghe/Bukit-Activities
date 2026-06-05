@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { compactPayload } from '../lib/helpers'
+import VenueSelect from './VenueSelect'
 
 const emptyActivity = {
 	title: '',
@@ -22,7 +23,7 @@ const emptyActivity = {
 	last_checked: '',
 }
 
-export default function ActivityForm({ initialRecord, venues, onSubmit, onCancel }) {
+export default function ActivityForm({ initialRecord, onSubmit, onCancel }) {
 	const [form, setForm] = useState(emptyActivity)
 
 	useEffect(() => {
@@ -34,6 +35,15 @@ export default function ActivityForm({ initialRecord, venues, onSubmit, onCancel
 		setForm((current) => ({ ...current, [name]: type === 'checkbox' ? checked : value }))
 	}
 
+	function handleVenueChange(venue) {
+		setForm((current) => ({
+			...current,
+			venue_id: venue?.id || '',
+			area: venue?.area || '',
+			category: venue?.category || '',
+		}))
+	}
+
 	function handleSubmit(event) {
 		event.preventDefault()
 		onSubmit(compactPayload({ ...form, venue_id: form.venue_id || null }))
@@ -43,15 +53,7 @@ export default function ActivityForm({ initialRecord, venues, onSubmit, onCancel
 		<form className="formStack" onSubmit={handleSubmit}>
 			<div className="grid">
 				<Field label="Title" name="title" value={form.title} onChange={handleChange} required />
-				<div className="field">
-					<label htmlFor="venue_id">Venue</label>
-					<select id="venue_id" name="venue_id" value={form.venue_id || ''} onChange={handleChange}>
-						<option value="">Select venue</option>
-						{venues.map((venue) => (
-							<option key={venue.id} value={venue.id}>{venue.name}</option>
-						))}
-					</select>
-				</div>
+				<VenueSelect value={form.venue_id} onChange={handleVenueChange} />
 				<Field label="Category" name="category" value={form.category} onChange={handleChange} />
 				<Field label="Area" name="area" value={form.area} onChange={handleChange} />
 				<Field label="Date" name="activity_date" type="date" value={form.activity_date || ''} onChange={handleChange} />

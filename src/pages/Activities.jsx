@@ -30,8 +30,8 @@ export default function Activities({ setToast }) {
 
 	const categories = useMemo(() => unique(rows, 'category'), [rows])
 	const visibleRows = useMemo(() => rows.filter((row) => {
-		if (filters.search && !textMatches(row, filters.search, ['title', 'venue_name', 'category', 'area'])) return false
-		if (filters.quick && !textMatches(row, filters.quick, ['title', 'venue_name', 'category', 'area', 'why_jon_might_care', 'description'])) return false
+		if (filters.search && !textMatches(row, filters.search, ['title', 'venue_name', 'category', 'area', 'venue_area', 'venue_category'])) return false
+		if (filters.quick && !textMatches(row, filters.quick, ['title', 'venue_name', 'category', 'area', 'venue_area', 'venue_category', 'why_jon_might_care', 'description'])) return false
 		if (filters.category && row.category !== filters.category) return false
 		if (filters.status && row.status !== filters.status) return false
 		if (filters.featured === 'yes' && !row.is_featured) return false
@@ -84,18 +84,30 @@ export default function Activities({ setToast }) {
 				<DataTable loading={loading} rows={visibleRows} columns={[
 					{ key: 'title', label: 'Title' },
 					{ key: 'venue_name', label: 'Venue' },
-					{ key: 'area', label: 'Area' },
-					{ key: 'category', label: 'Category' },
+					{ key: 'venue_area', label: 'Venue Area', render: (row) => display(row.venue_area || row.area) },
+					{ key: 'venue_category', label: 'Venue Category', render: (row) => display(row.venue_category || row.category) },
 					{ key: 'activity_date', label: 'Date', render: (row) => formatDate(row.activity_date) },
 					{ key: 'start_time', label: 'Time', render: (row) => formatTime(row.start_time) },
 					{ key: 'recurring_schedule', label: 'Recurring' },
 					{ key: 'cost', label: 'Cost' },
 					{ key: 'status', label: 'Status', render: (row) => display(row.status) },
 					{ key: 'why_jon_might_care', label: 'Why Jon Might Care' },
+					{ key: 'venue_links', label: 'Venue Links', render: (row) => <VenueLinks row={row} /> },
 					{ key: 'actions', label: 'Actions', render: (row) => <div className="tableActions"><ExternalLink href={row.booking_link || row.source_link}>Open</ExternalLink><button type="button" className="tableButton" onClick={() => setEditing(row)}>Edit</button><button type="button" className="tableButton" onClick={() => updateStatus(row, 'archived')}>Archive</button><button type="button" className="tableButton" onClick={() => updateStatus(row, 'cancelled')}>Cancel</button><button type="button" className="tableButton dangerButton" onClick={() => deleteActivity(row)}>Delete</button></div> },
 				]} />
 			</section>
 		</>
+	)
+}
+
+function VenueLinks({ row }) {
+	return (
+		<div className="tableActions">
+			<ExternalLink href={row.venue_website}>Web</ExternalLink>
+			<ExternalLink href={row.venue_instagram}>IG</ExternalLink>
+			<ExternalLink href={row.venue_whatsapp}>WA</ExternalLink>
+			<ExternalLink href={row.venue_google_maps_link}>Map</ExternalLink>
+		</div>
 	)
 }
 

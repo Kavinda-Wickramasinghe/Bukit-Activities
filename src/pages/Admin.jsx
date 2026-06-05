@@ -86,7 +86,7 @@ export default function Admin({ setToast }) {
 			<section className="heroCard">
 				<div>
 					<p className="heroLabel">Admin</p>
-					<h2>Admin maintenance desk</h2>
+					<h2>⚙️ Admin maintenance desk</h2>
 					<p className="heroText">Add, edit, and clean up records from one focused workspace.</p>
 				</div>
 			</section>
@@ -149,13 +149,14 @@ export default function Admin({ setToast }) {
 					<DataTable loading={loading} rows={activities} emptyText="No activities yet." columns={[
 						{ key: 'title', label: 'Title' },
 						{ key: 'venue_name', label: 'Venue' },
-						{ key: 'area', label: 'Area' },
-						{ key: 'category', label: 'Category' },
+						{ key: 'venue_area', label: 'Venue Area', render: (row) => display(row.venue_area || row.area) },
+						{ key: 'venue_category', label: 'Venue Category', render: (row) => display(row.venue_category || row.category) },
 						{ key: 'activity_date', label: 'Date', render: (row) => formatDate(row.activity_date) },
 						{ key: 'start_time', label: 'Time', render: (row) => formatTime(row.start_time) },
 						{ key: 'cost', label: 'Cost' },
 						{ key: 'status', label: 'Status' },
 						{ key: 'why_jon_might_care', label: 'Why Jon Might Care' },
+						{ key: 'venue_links', label: 'Venue Links', render: (row) => <VenueLinks row={row} /> },
 						{ key: 'actions', label: 'Actions', render: (row) => (
 							<div className="tableActions">
 								<ExternalLink href={row.booking_link || row.source_link}>Open</ExternalLink>
@@ -216,6 +217,7 @@ export default function Admin({ setToast }) {
 						{ key: 'week_start_date', label: 'Week', render: (row) => formatDate(row.week_start_date) },
 						{ key: 'pick_type', label: 'Type' },
 						{ key: 'title', label: 'Title', render: (row) => display(row.custom_title || activityById[row.activity_id]?.title) },
+						{ key: 'venue', label: 'Venue', render: (row) => display(activityById[row.activity_id]?.venue_name) },
 						{ key: 'activity', label: 'Activity Time', render: (row) => {
 							const activity = activityById[row.activity_id]
 							return activity ? formatDateTime(activity.activity_date, activity.start_time) : '-'
@@ -235,6 +237,17 @@ export default function Admin({ setToast }) {
 				</AdminTable>
 			)}
 		</>
+	)
+}
+
+function VenueLinks({ row }) {
+	return (
+		<div className="tableActions">
+			<ExternalLink href={row.venue_website}>Web</ExternalLink>
+			<ExternalLink href={row.venue_instagram}>IG</ExternalLink>
+			<ExternalLink href={row.venue_whatsapp}>WA</ExternalLink>
+			<ExternalLink href={row.venue_google_maps_link}>Map</ExternalLink>
+		</div>
 	)
 }
 

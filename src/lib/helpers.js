@@ -46,6 +46,18 @@ export function formatDateTime(date, time) {
 	return `${dateText}, ${timeText}`
 }
 
+export function dateKey(value = new Date()) {
+	const date = new Date(value)
+	date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
+	return date.toISOString().slice(0, 10)
+}
+
+export function addCalendarDays(value, days) {
+	const date = new Date(value)
+	date.setDate(date.getDate() + days)
+	return date
+}
+
 export function display(value) {
 	return value === null || value === undefined || value === '' ? '-' : String(value)
 }

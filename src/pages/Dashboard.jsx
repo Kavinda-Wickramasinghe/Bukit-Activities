@@ -3,7 +3,7 @@ import ActivityCard from '../components/ActivityCard'
 import QuickFilters from '../components/QuickFilters'
 import StatCard from '../components/StatCard'
 import { supabase } from '../lib/supabaseClient'
-import { byDateTime, textMatches } from '../lib/helpers'
+import { addCalendarDays, byDateTime, dateKey, textMatches } from '../lib/helpers'
 
 export default function Dashboard({ setToast }) {
 	const [loading, setLoading] = useState(true)
@@ -16,9 +16,11 @@ export default function Dashboard({ setToast }) {
 	useEffect(() => {
 		async function loadDashboard() {
 			setLoading(true)
+			const todayKey = dateKey()
+			const weekEndKey = dateKey(addCalendarDays(new Date(), 7))
 			const [todayResult, weekResult, picksResult, featuredResult, venuesResult, sourcesResult] = await Promise.all([
-				supabase.from('today_activities').select('*').order('start_time', { ascending: true }),
-				supabase.from('this_week_activities').select('*').order('activity_date', { ascending: true }).order('start_time', { ascending: true }),
+				supabase.from('activities_with_venues').select('*').eq('activity_date', todayKey).order('start_time', { ascending: true }),
+				supabase.from('activities_with_venues').select('*').gte('activity_date', todayKey).lte('activity_date', weekEndKey).order('activity_date', { ascending: true }).order('start_time', { ascending: true }),
 				supabase.from('weekly_picks').select('*').order('week_start_date', { ascending: false }).limit(8),
 				supabase.from('activities').select('id', { count: 'exact', head: true }).eq('is_featured', true),
 				supabase.from('venues').select('id', { count: 'exact', head: true }),
@@ -49,22 +51,22 @@ export default function Dashboard({ setToast }) {
 			<section className="heroCard">
 				<div>
 					<p className="heroLabel">Quick Decision Menu</p>
-					<h2>What is worth doing?</h2>
+					<h2>🌴 What is worth doing?</h2>
 					<p className="heroText">Open this, scan the best options, and pick the next good move without spelunking through chats.</p>
 				</div>
 			</section>
 			<QuickFilters activeFilter={quickFilter} onChange={setQuickFilter} />
 			<section className="statsGrid">
-				<StatCard label="Today" value={stats.today} hint="options live now" />
-				<StatCard label="This Week" value={stats.week} hint="next 7 days" />
-				<StatCard label="Featured" value={stats.featured} hint="worth a look" />
-				<StatCard label="Venues" value={stats.venues} hint="places tracked" />
-				<StatCard label="WhatsApp" value={stats.sources} hint="sources to check" />
+				<StatCard label="☀️ Today" value={stats.today} hint="options live now" />
+				<StatCard label="📅 This Week" value={stats.week} hint="next 7 days" />
+				<StatCard label="⭐ Featured" value={stats.featured} hint="worth a look" />
+				<StatCard label="📍 Venues" value={stats.venues} hint="places tracked" />
+				<StatCard label="💬 WhatsApp" value={stats.sources} hint="sources to check" />
 			</section>
-			<DecisionSection title="What's Good Today" loading={loading} items={filteredToday} />
-			<DecisionSection title="This Week Highlights" loading={loading} items={filteredWeek} showDate />
+			<DecisionSection title="☀️ What's Good Today" loading={loading} items={filteredToday} />
+			<DecisionSection title="📅 This Week Highlights" loading={loading} items={filteredWeek} showDate />
 			<section className="tabSection">
-				<div className="tabHeading"><div><h2>Jon Picks</h2><p>Weekly picks grouped by intent.</p></div></div>
+				<div className="tabHeading"><div><h2>⭐ Jon Picks</h2><p>Weekly picks grouped by intent.</p></div></div>
 				<div className="decisionGrid">
 					{loading ? <p className="emptyState">Loading...</p> : picks.length ? picks.map((pick) => (
 						<article className="decisionCard" key={pick.id}>

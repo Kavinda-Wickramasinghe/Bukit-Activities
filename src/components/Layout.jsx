@@ -1,6 +1,12 @@
 import { useState } from 'react'
 
 const tabs = ['Dashboard', 'Today', 'This Week', 'Admin']
+const tabIcons = {
+	Dashboard: '🏠',
+	Today: '☀️',
+	'This Week': '📅',
+	Admin: '⚙️',
+}
 
 export default function Layout({ activeTab, onTabChange, children }) {
 	const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -26,14 +32,15 @@ export default function Layout({ activeTab, onTabChange, children }) {
 			<aside className="sidebar">
 				<button type="button" className="closeButton" aria-label="Close navigation" onClick={() => setSidebarOpen(false)}>×</button>
 				<div className="brandBlock">
-					<p className="eyebrow">Private Dashboard</p>
+					<p className="eyebrow">🌊 Private Dashboard</p>
 					<h1>Bukit Activity OS</h1>
 					<p className="brandNote">A fast read on what is worth doing around Uluwatu, Ungasan, Jimbaran, Pecatu, Bingin, and nearby Bukit spots.</p>
 				</div>
 				<nav className="sideNav" aria-label="Bukit Activity OS sections">
 					{tabs.map((tab) => (
 						<button key={tab} type="button" className={`navTab ${activeTab === tab ? 'active' : ''}`} onClick={() => selectTab(tab)}>
-							{tab}
+							<span className="navIcon" aria-hidden="true">{tabIcons[tab]}</span>
+							<span>{tab}</span>
 						</button>
 					))}
 				</nav>
