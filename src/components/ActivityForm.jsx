@@ -23,6 +23,8 @@ const emptyActivity = {
 	last_checked: '',
 }
 
+const activityFields = Object.keys(emptyActivity)
+
 export default function ActivityForm({ initialRecord, onSubmit, onCancel }) {
 	const [form, setForm] = useState(emptyActivity)
 
@@ -46,7 +48,8 @@ export default function ActivityForm({ initialRecord, onSubmit, onCancel }) {
 
 	function handleSubmit(event) {
 		event.preventDefault()
-		onSubmit(compactPayload({ ...form, venue_id: form.venue_id || null }))
+		const payload = Object.fromEntries(activityFields.map((field) => [field, form[field]]))
+		onSubmit(compactPayload({ ...payload, venue_id: form.venue_id || null }))
 	}
 
 	return (
