@@ -367,7 +367,7 @@
 	}
 
 	.venueSelectField {
-		@apply gap-2;
+		@apply gap-0;
 	}
 
 	.venuePreview {
