@@ -32,7 +32,6 @@ export default function ThisWeek({ setToast, refreshKey }) {
 
 	return (
 		<>
-			<section className="heroCard"><div><p className="heroLabel">This Week</p><h2>📅 Low Friction Options</h2><p className="heroText">The next seven days, sorted so the best time-sensitive choices rise naturally.</p></div></section>
 			<section className="tabSection">
 				<DataTable loading={loading} rows={sortedRows} emptyText="No activities listed for this week yet." columns={[
 					{ key: 'activity_date', label: 'Date', render: (row) => formatDate(row.activity_date) },

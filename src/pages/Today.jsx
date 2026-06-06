@@ -26,7 +26,6 @@ export default function Today({ setToast, refreshKey }) {
 
 	return (
 		<>
-			<Hero label="Today" title="☀️ What's Good Today" text="A clean scan of events, classes, and easy yes options happening today." />
 			<section className="tabSection">
 				<DataTable loading={loading} rows={rows} emptyText="Nothing listed for today yet." columns={[
 					{ key: 'start_time', label: 'Time', render: (row) => formatTime(row.start_time) },

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { display } from '../lib/helpers'
 import { getErrorMessage } from '../lib/errors'
 import { supabase } from '../lib/supabaseClient'
@@ -6,7 +6,6 @@ import ExternalLink from './ExternalLink'
 
 export default function VenueSelect({ value, onChange }) {
 	const [venues, setVenues] = useState([])
-	const [search, setSearch] = useState('')
 	const [loading, setLoading] = useState(true)
 	const [error, setError] = useState('')
 
@@ -31,20 +30,7 @@ export default function VenueSelect({ value, onChange }) {
 		loadVenues()
 	}, [])
 
-	const filteredVenues = useMemo(() => {
-		const query = search.trim().toLowerCase()
-		if (!query) return venues
-		return venues.filter((venue) => (
-			String(venue.name || '').toLowerCase().includes(query) ||
-			String(venue.area || '').toLowerCase().includes(query) ||
-			String(venue.category || '').toLowerCase().includes(query)
-		))
-	}, [venues, search])
-
-	const selectedVenue = useMemo(
-		() => venues.find((venue) => String(venue.id) === String(value)) || null,
-		[venues, value]
-	)
+	const selectedVenue = venues.find((venue) => String(venue.id) === String(value)) || null
 
 	function handleSelect(event) {
 		const venue = venues.find((item) => String(item.id) === String(event.target.value)) || null
@@ -53,17 +39,10 @@ export default function VenueSelect({ value, onChange }) {
 
 	return (
 		<div className="field venueSelectField">
-			<label htmlFor="venue-search">Venue</label>
-			<input
-				id="venue-search"
-				type="search"
-				value={search}
-				onChange={(event) => setSearch(event.target.value)}
-				placeholder="Search venue, area, or category"
-			/>
+			<label htmlFor="venue_id">Venue</label>
 			<select id="venue_id" name="venue_id" value={value || ''} onChange={handleSelect} disabled={loading || Boolean(error)}>
 				<option value="">{loading ? 'Loading venues...' : 'Select venue'}</option>
-				{filteredVenues.map((venue) => (
+				{venues.map((venue) => (
 					<option key={venue.id} value={venue.id}>
 						{venue.name} {venue.area ? `· ${venue.area}` : ''} {venue.category ? `· ${venue.category}` : ''}
 					</option>
@@ -71,7 +50,6 @@ export default function VenueSelect({ value, onChange }) {
 			</select>
 			{error && <div className="errorText">{error}</div>}
 			{!loading && !error && venues.length === 0 && <div className="emptyMini">No venues available yet. Add a venue first.</div>}
-			{!loading && !error && venues.length > 0 && filteredVenues.length === 0 && <div className="emptyMini">No venues match that search.</div>}
 			{selectedVenue && <VenuePreview venue={selectedVenue} />}
 		</div>
 	)

@@ -128,7 +128,7 @@ export default function ActivityForm({ initialRecord, onSubmit, onCancel }) {
 				</div>
 			</section>
 
-			<div className="actionRow !mt-0">
+			<div className="formActions">
 				<button className="primary" type="submit">{initialRecord ? 'Update Activity' : 'Add Activity'}</button>
 				{initialRecord && <button type="button" onClick={onCancel}>Cancel Edit</button>}
 			</div>

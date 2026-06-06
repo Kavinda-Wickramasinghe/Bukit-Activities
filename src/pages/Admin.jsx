@@ -109,14 +109,6 @@ export default function Admin({ setToast, refreshKey }) {
 
 	return (
 		<>
-			<section className="heroCard">
-				<div>
-					<p className="heroLabel">Admin</p>
-					<h2>⚙️ Admin maintenance desk</h2>
-					<p className="heroText">Add, edit, and clean up records from one focused workspace.</p>
-				</div>
-			</section>
-
 			<section className="formCard">
 				<div className="sectionHeading">
 					<div>

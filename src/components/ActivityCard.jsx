@@ -14,7 +14,13 @@ export default function ActivityCard({ activity, showDate = false, onOpen }) {
 			</div>
 			<h3>{display(activity.title)}</h3>
 			<p className="mutedLine">{display(activity.venue_name)} · {display(venueArea)} · {display(activity.cost)}</p>
-			{activity.is_recurring && <div className="mt-2"><RecurringBadge activity={activity} /></div>}
+			{(activity.is_recurring || activity.is_featured || activity.booking_required) && (
+				<div className="mt-2 flex flex-wrap gap-2">
+					{activity.is_recurring && <RecurringBadge activity={activity} />}
+					{activity.is_featured && <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-1 text-[11px] font-extrabold text-amber-700 ring-1 ring-amber-100">★ Featured</span>}
+					{activity.booking_required && <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-1 text-[11px] font-extrabold text-sky-700 ring-1 ring-sky-100">Booking Required</span>}
+				</div>
+			)}
 			{activity.why_jon_might_care && <p>{activity.why_jon_might_care}</p>}
 			<div className="actionRow compact">
 				<ExternalLink href={activity.booking_link || activity.source_link}>Booking</ExternalLink>

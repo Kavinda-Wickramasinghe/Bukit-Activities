@@ -28,23 +28,54 @@ export default function WhatsAppSourceForm({ initialRecord, onSubmit, onCancel }
 	}
 
 	return (
-		<form className="formStack" onSubmit={handleSubmit}>
-			<div className="grid">
-				<Field label="Group Name" name="group_name" value={form.group_name} onChange={handleChange} required />
-				<Field label="Category" name="category" value={form.category || ''} onChange={handleChange} />
-				<Field label="Area" name="area" value={form.area || ''} onChange={handleChange} />
-				<Field label="Link" name="link" value={form.link || ''} onChange={handleChange} />
-				<Field label="Admin Contact" name="admin_contact" value={form.admin_contact || ''} onChange={handleChange} />
-				<Field label="Purpose" name="purpose" value={form.purpose || ''} onChange={handleChange} />
-				<Field label="Check Frequency" name="check_frequency" value={form.check_frequency || ''} onChange={handleChange} />
-				<Field label="Last Checked" name="last_checked" type="date" value={form.last_checked || ''} onChange={handleChange} />
-			</div>
-			<Field label="Notes" name="notes" value={form.notes || ''} onChange={handleChange} textarea />
-			<div className="actionRow">
+		<form className="space-y-5" onSubmit={handleSubmit}>
+			<section className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+				<SectionTitle number="1" tone="emerald" title="Source identity" />
+				<div className="grid gap-4 md:grid-cols-3">
+					<Field label="Group Name" name="group_name" value={form.group_name} onChange={handleChange} required />
+					<Field label="Category" name="category" value={form.category || ''} onChange={handleChange} />
+					<Field label="Area" name="area" value={form.area || ''} onChange={handleChange} />
+				</div>
+			</section>
+
+			<section className="rounded-2xl border border-slate-200 bg-white p-4">
+				<SectionTitle number="2" tone="sky" title="Access and checking" />
+				<div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+					<Field label="Link" name="link" value={form.link || ''} onChange={handleChange} />
+					<Field label="Admin Contact" name="admin_contact" value={form.admin_contact || ''} onChange={handleChange} />
+					<Field label="Check Frequency" name="check_frequency" value={form.check_frequency || ''} onChange={handleChange} />
+					<Field label="Last Checked" name="last_checked" type="date" value={form.last_checked || ''} onChange={handleChange} />
+				</div>
+			</section>
+
+			<section className="rounded-2xl border border-slate-200 bg-white p-4">
+				<SectionTitle number="3" tone="amber" title="Purpose and notes" />
+				<div className="grid gap-4 lg:grid-cols-2">
+					<Field label="Purpose" name="purpose" value={form.purpose || ''} onChange={handleChange} />
+					<Field label="Notes" name="notes" value={form.notes || ''} onChange={handleChange} textarea />
+				</div>
+			</section>
+
+			<div className="formActions">
 				<button className="primary" type="submit">{initialRecord ? 'Update Source' : 'Add Source'}</button>
 				{initialRecord && <button type="button" onClick={onCancel}>Cancel Edit</button>}
 			</div>
 		</form>
+	)
+}
+
+function SectionTitle({ number, tone, title }) {
+	const toneClass = {
+		emerald: 'bg-emerald-100 text-emerald-700',
+		sky: 'bg-sky-100 text-sky-700',
+		amber: 'bg-amber-100 text-amber-700',
+	}[tone]
+
+	return (
+		<div className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-900">
+			<span className={`inline-flex h-7 w-7 items-center justify-center rounded-lg ${toneClass}`}>{number}</span>
+			{title}
+		</div>
 	)
 }
 
