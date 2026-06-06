@@ -2,18 +2,17 @@ import { useEffect, useState } from 'react'
 import Layout from './components/Layout'
 import Toast from './components/Toast'
 import { hasSupabaseKeys } from './lib/supabaseClient'
-import Activities from './pages/Activities'
+import { rolloverRecurringActivities } from './lib/recurring'
+import { getErrorMessage } from './lib/errors'
 import Admin from './pages/Admin'
 import Dashboard from './pages/Dashboard'
-import JonPicks from './pages/JonPicks'
 import ThisWeek from './pages/ThisWeek'
 import Today from './pages/Today'
-import Venues from './pages/Venues'
-import WhatsAppSources from './pages/WhatsAppSources'
 
 export default function App() {
 	const [activeTab, setActiveTab] = useState('Dashboard')
 	const [toast, setToast] = useState(null)
+	const [refreshKey, setRefreshKey] = useState(0)
 
 	useEffect(() => {
 		if (!toast) return undefined
@@ -24,7 +23,22 @@ export default function App() {
 	useEffect(() => {
 		if (!hasSupabaseKeys) {
 			setToast({ type: 'error', text: 'Supabase keys missing. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env.' })
+			return
 		}
+
+		async function updateRecurringActivities() {
+			try {
+				const result = await rolloverRecurringActivities()
+				if (result.updated > 0) {
+					setToast({ type: 'success', text: `Updated ${result.updated} recurring activit${result.updated === 1 ? 'y' : 'ies'} to the next date.` })
+					setRefreshKey((current) => current + 1)
+				}
+			} catch (error) {
+				setToast({ type: 'error', text: getErrorMessage(error, 'Could not update recurring activities.') })
+			}
+		}
+
+		updateRecurringActivities()
 	}, [])
 
 	function renderPage() {
@@ -42,20 +56,12 @@ export default function App() {
 			)
 		}
 
-		const props = { setToast }
+		const props = { setToast, refreshKey }
 		switch (activeTab) {
 			case 'Today':
 				return <Today {...props} />
 			case 'This Week':
 				return <ThisWeek {...props} />
-			case 'Jon Picks':
-				return <JonPicks {...props} />
-			case 'Activities':
-				return <Activities {...props} />
-			case 'Venues':
-				return <Venues {...props} />
-			case 'WhatsApp Sources':
-				return <WhatsAppSources {...props} />
 			case 'Admin':
 				return <Admin {...props} />
 			case 'Dashboard':

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { display } from '../lib/helpers'
+import { getErrorMessage } from '../lib/errors'
 import { supabase } from '../lib/supabaseClient'
 import ExternalLink from './ExternalLink'
 
@@ -19,7 +20,7 @@ export default function VenueSelect({ value, onChange }) {
 				.order('name', { ascending: true })
 
 			if (venueError) {
-				setError(venueError.message || 'Could not load venues')
+				setError(getErrorMessage(venueError, 'Could not load venues'))
 				setVenues([])
 			} else {
 				setVenues(data || [])

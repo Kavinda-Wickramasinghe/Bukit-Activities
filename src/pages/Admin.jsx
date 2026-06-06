@@ -5,12 +5,14 @@ import ExternalLink from '../components/ExternalLink'
 import VenueForm from '../components/VenueForm'
 import WhatsAppSourceForm from '../components/WhatsAppSourceForm'
 import WeeklyPickForm from '../components/WeeklyPickForm'
+import RecurringBadge from '../components/RecurringBadge'
+import { notifyError } from '../lib/errors'
 import { display, formatDate, formatDateTime, formatTime } from '../lib/helpers'
 import { supabase } from '../lib/supabaseClient'
 
 const adminTabs = ['Add Activity', 'Add Venue', 'Add WhatsApp Source', 'Add Weekly Pick']
 
-export default function Admin({ setToast }) {
+export default function Admin({ setToast, refreshKey }) {
 	const [activeForm, setActiveForm] = useState(adminTabs[0])
 	const [activities, setActivities] = useState([])
 	const [venues, setVenues] = useState([])
@@ -22,24 +24,40 @@ export default function Admin({ setToast }) {
 
 	async function loadAdminData() {
 		setLoading(true)
-		const [activitiesResult, venuesResult, sourcesResult, picksResult] = await Promise.all([
-			supabase.from('activities_with_venues').select('*').order('activity_date', { ascending: true }).order('start_time', { ascending: true }),
-			supabase.from('venues').select('*').order('name', { ascending: true }),
-			supabase.from('whatsapp_sources').select('*').order('group_name', { ascending: true }),
-			supabase.from('weekly_picks').select('*').order('week_start_date', { ascending: false }),
-		])
+		try {
+			const [activitiesResult, venuesResult, sourcesResult, picksResult] = await Promise.all([
+				supabase.from('activities_with_venues').select('*').order('activity_date', { ascending: true }).order('start_time', { ascending: true }),
+				supabase.from('venues').select('*').order('name', { ascending: true }),
+				supabase.from('whatsapp_sources').select('*').order('group_name', { ascending: true }),
+				supabase.from('weekly_picks').select('*').order('week_start_date', { ascending: false }),
+			])
 
-		const error = [activitiesResult, venuesResult, sourcesResult, picksResult].find((result) => result.error)?.error
-		if (error) setToast({ type: 'error', text: error.message })
+			const error = [activitiesResult, venuesResult, sourcesResult, picksResult].find((result) => result.error)?.error
+			if (error) {
+				notifyError(setToast, error, 'Could not load admin data.')
+				setActivities([])
+				setVenues([])
+				setSources([])
+				setPicks([])
+				return
+			}
 
-		setActivities(activitiesResult.data || [])
-		setVenues(venuesResult.data || [])
-		setSources(sourcesResult.data || [])
-		setPicks(picksResult.data || [])
-		setLoading(false)
+			setActivities(activitiesResult.data || [])
+			setVenues(venuesResult.data || [])
+			setSources(sourcesResult.data || [])
+			setPicks(picksResult.data || [])
+		} catch (error) {
+			notifyError(setToast, error, 'Could not load admin data.')
+			setActivities([])
+			setVenues([])
+			setSources([])
+			setPicks([])
+		} finally {
+			setLoading(false)
+		}
 	}
 
-	useEffect(() => { loadAdminData() }, [])
+	useEffect(() => { loadAdminData() }, [refreshKey])
 
 	const activityById = useMemo(() => Object.fromEntries(activities.map((activity) => [activity.id, activity])), [activities])
 
@@ -50,30 +68,38 @@ export default function Admin({ setToast }) {
 	}
 
 	async function saveRecord(table, payload, label) {
-		const request = editing
-			? supabase.from(table).update(payload).eq('id', editing.id)
-			: supabase.from(table).insert([payload])
+		try {
+			const request = editing
+				? supabase.from(table).update(payload).eq('id', editing.id)
+				: supabase.from(table).insert([payload])
 
-		const { error } = await request
-		if (error) return setToast({ type: 'error', text: error.message })
+			const { error } = await request
+			if (error) return notifyError(setToast, error, `Could not save ${label.toLowerCase()}.`)
 
-		setToast({ type: 'success', text: editing ? `${label} updated.` : `${label} added.` })
-		setEditing(null)
-		setFormVersion((current) => current + 1)
-		loadAdminData()
+			setToast({ type: 'success', text: editing ? `${label} updated.` : `${label} added.` })
+			setEditing(null)
+			setFormVersion((current) => current + 1)
+			await loadAdminData()
+		} catch (error) {
+			notifyError(setToast, error, `Could not save ${label.toLowerCase()}.`)
+		}
 	}
 
 	async function deleteRecord(table, row, label, name) {
 		if (!window.confirm(`Delete ${name || label}?`)) return
-		const { error } = await supabase.from(table).delete().eq('id', row.id)
-		if (error) return setToast({ type: 'error', text: error.message })
+		try {
+			const { error } = await supabase.from(table).delete().eq('id', row.id)
+			if (error) return notifyError(setToast, error, `Could not delete ${label.toLowerCase()}.`)
 
-		setToast({ type: 'success', text: `${label} deleted.` })
-		if (editing?.id === row.id) {
-			setEditing(null)
-			setFormVersion((current) => current + 1)
+			setToast({ type: 'success', text: `${label} deleted.` })
+			if (editing?.id === row.id) {
+				setEditing(null)
+				setFormVersion((current) => current + 1)
+			}
+			await loadAdminData()
+		} catch (error) {
+			notifyError(setToast, error, `Could not delete ${label.toLowerCase()}.`)
 		}
-		loadAdminData()
 	}
 
 	function startEdit(row) {
@@ -112,7 +138,6 @@ export default function Admin({ setToast }) {
 					<ActivityForm
 						key={`activity-${formVersion}`}
 						initialRecord={editing}
-						venues={venues}
 						onSubmit={(payload) => saveRecord('activities', payload, 'Activity')}
 						onCancel={() => { setEditing(null); setFormVersion((current) => current + 1) }}
 					/>
@@ -153,15 +178,16 @@ export default function Admin({ setToast }) {
 						{ key: 'venue_category', label: 'Venue Category', render: (row) => display(row.venue_category || row.category) },
 						{ key: 'activity_date', label: 'Date', render: (row) => formatDate(row.activity_date) },
 						{ key: 'start_time', label: 'Time', render: (row) => formatTime(row.start_time) },
+						{ key: 'is_recurring', label: 'Repeats', render: (row) => <RecurringBadge activity={row} /> },
 						{ key: 'cost', label: 'Cost' },
 						{ key: 'status', label: 'Status' },
 						{ key: 'why_jon_might_care', label: 'Why Jon Might Care' },
+						{ key: 'booking_link', label: 'Booking', render: (row) => <ExternalLink href={row.booking_link || row.source_link}>Open</ExternalLink> },
 						{ key: 'venue_links', label: 'Venue Links', render: (row) => <VenueLinks row={row} /> },
 						{ key: 'actions', label: 'Actions', render: (row) => (
 							<div className="tableActions">
-								<IconLink href={row.booking_link || row.source_link} label="Open booking or source">↗</IconLink>
-								<IconButton label="Edit activity" onClick={() => startEdit(row)}>✎</IconButton>
-								<IconButton label="Delete activity" danger onClick={() => deleteRecord('activities', row, 'Activity', row.title)}>×</IconButton>
+								<button type="button" className="tableButton" onClick={() => startEdit(row)}>Edit</button>
+								<button type="button" className="tableButton dangerButton" onClick={() => deleteRecord('activities', row, 'Activity', row.title)}>Delete</button>
 							</div>
 						) },
 					]} />
@@ -182,8 +208,8 @@ export default function Admin({ setToast }) {
 						{ key: 'last_checked', label: 'Last Checked', render: (row) => formatDate(row.last_checked) },
 						{ key: 'actions', label: 'Actions', render: (row) => (
 							<div className="tableActions">
-								<IconButton label="Edit venue" onClick={() => startEdit(row)}>✎</IconButton>
-								<IconButton label="Delete venue" danger onClick={() => deleteRecord('venues', row, 'Venue', row.name)}>×</IconButton>
+								<button type="button" className="tableButton" onClick={() => startEdit(row)}>Edit</button>
+								<button type="button" className="tableButton dangerButton" onClick={() => deleteRecord('venues', row, 'Venue', row.name)}>Delete</button>
 							</div>
 						) },
 					]} />
@@ -203,8 +229,8 @@ export default function Admin({ setToast }) {
 						{ key: 'last_checked', label: 'Last Checked', render: (row) => formatDate(row.last_checked) },
 						{ key: 'actions', label: 'Actions', render: (row) => (
 							<div className="tableActions">
-								<IconButton label="Edit WhatsApp source" onClick={() => startEdit(row)}>✎</IconButton>
-								<IconButton label="Delete WhatsApp source" danger onClick={() => deleteRecord('whatsapp_sources', row, 'WhatsApp source', row.group_name)}>×</IconButton>
+								<button type="button" className="tableButton" onClick={() => startEdit(row)}>Edit</button>
+								<button type="button" className="tableButton dangerButton" onClick={() => deleteRecord('whatsapp_sources', row, 'WhatsApp source', row.group_name)}>Delete</button>
 							</div>
 						) },
 					]} />
@@ -227,9 +253,9 @@ export default function Admin({ setToast }) {
 							const activity = activityById[row.activity_id]
 							return (
 								<div className="tableActions">
-									<IconLink href={activity?.booking_link || activity?.source_link} label="Open activity link">↗</IconLink>
-									<IconButton label="Edit weekly pick" onClick={() => startEdit(row)}>✎</IconButton>
-									<IconButton label="Delete weekly pick" danger onClick={() => deleteRecord('weekly_picks', row, 'Weekly pick', row.custom_title || row.pick_type)}>×</IconButton>
+									<ExternalLink href={activity?.booking_link || activity?.source_link}>Open</ExternalLink>
+									<button type="button" className="tableButton" onClick={() => startEdit(row)}>Edit</button>
+									<button type="button" className="tableButton dangerButton" onClick={() => deleteRecord('weekly_picks', row, 'Weekly pick', row.custom_title || row.pick_type)}>Delete</button>
 								</div>
 							)
 						} },
@@ -243,34 +269,11 @@ export default function Admin({ setToast }) {
 function VenueLinks({ row }) {
 	return (
 		<div className="tableActions">
-			<IconLink href={row.venue_website} label="Open website">⌂</IconLink>
-			<IconLink href={row.venue_instagram} label="Open Instagram">◎</IconLink>
-			<IconLink href={row.venue_whatsapp} label="Open WhatsApp">✆</IconLink>
-			<IconLink href={row.venue_google_maps_link} label="Open map">⌖</IconLink>
+			<ExternalLink href={row.venue_website}>Web</ExternalLink>
+			<ExternalLink href={row.venue_instagram}>IG</ExternalLink>
+			<ExternalLink href={row.venue_whatsapp}>WA</ExternalLink>
+			<ExternalLink href={row.venue_google_maps_link}>Map</ExternalLink>
 		</div>
-	)
-}
-
-function IconButton({ label, danger = false, onClick, children }) {
-	return (
-		<button
-			type="button"
-			className={`iconButton ${danger ? 'dangerButton' : ''}`}
-			aria-label={label}
-			title={label}
-			onClick={onClick}
-		>
-			{children}
-		</button>
-	)
-}
-
-function IconLink({ href, label, children }) {
-	if (!href) return <span className="iconButton disabled" title={label}>{children}</span>
-	return (
-		<ExternalLink href={href}>
-			<span className="iconLinkInner" aria-label={label} title={label}>{children}</span>
-		</ExternalLink>
 	)
 }
 

@@ -1,17 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
 import ActivityCard from '../components/ActivityCard'
+import ActivityDetailsModal from '../components/ActivityDetailsModal'
 import QuickFilters from '../components/QuickFilters'
 import StatCard from '../components/StatCard'
 import { supabase } from '../lib/supabaseClient'
 import { addCalendarDays, byDateTime, dateKey, textMatches } from '../lib/helpers'
 
-export default function Dashboard({ setToast }) {
+export default function Dashboard({ setToast, refreshKey }) {
 	const [loading, setLoading] = useState(true)
 	const [quickFilter, setQuickFilter] = useState('')
 	const [today, setToday] = useState([])
 	const [week, setWeek] = useState([])
 	const [picks, setPicks] = useState([])
 	const [stats, setStats] = useState({ today: 0, week: 0, featured: 0, venues: 0, sources: 0 })
+	const [selectedActivity, setSelectedActivity] = useState(null)
 
 	useEffect(() => {
 		async function loadDashboard() {
@@ -41,20 +43,14 @@ export default function Dashboard({ setToast }) {
 			setLoading(false)
 		}
 		loadDashboard()
-	}, [setToast])
+	}, [setToast, refreshKey])
 
 	const filteredToday = useMemo(() => filterActivities(today, quickFilter).slice(0, 4), [today, quickFilter])
 	const filteredWeek = useMemo(() => filterActivities(week, quickFilter).sort(byDateTime).slice(0, 6), [week, quickFilter])
 
 	return (
 		<>
-			<section className="heroCard">
-				<div>
-					<p className="heroLabel">Quick Decision Menu</p>
-					<h2>🌴 What is worth doing?</h2>
-					<p className="heroText">Open this, scan the best options, and pick the next good move without spelunking through chats.</p>
-				</div>
-			</section>
+	
 			<QuickFilters activeFilter={quickFilter} onChange={setQuickFilter} />
 			<section className="statsGrid">
 				<StatCard label="Today" value={stats.today} hint="options live now" />
@@ -63,8 +59,8 @@ export default function Dashboard({ setToast }) {
 				<StatCard label="Venues" value={stats.venues} hint="places tracked" />
 				<StatCard label="WhatsApp" value={stats.sources} hint="sources to check" />
 			</section>
-			<DecisionSection title="☀️ What's Good Today" loading={loading} items={filteredToday} />
-			<DecisionSection title="📅 This Week Highlights" loading={loading} items={filteredWeek} showDate />
+			<DecisionSection title="☀️ What's Good Today" loading={loading} items={filteredToday} onOpen={setSelectedActivity} />
+			<DecisionSection title="📅 This Week Highlights" loading={loading} items={filteredWeek} showDate onOpen={setSelectedActivity} />
 			<section className="tabSection">
 				<div className="tabHeading"><div><h2>⭐ Jon Picks</h2><p>Weekly picks grouped by intent.</p></div></div>
 				<div className="decisionGrid">
@@ -77,16 +73,17 @@ export default function Dashboard({ setToast }) {
 					)) : <p className="emptyState">No picks yet.</p>}
 				</div>
 			</section>
+			<ActivityDetailsModal activity={selectedActivity} onClose={() => setSelectedActivity(null)} />
 		</>
 	)
 }
 
-function DecisionSection({ title, items, loading, showDate = false }) {
+function DecisionSection({ title, items, loading, showDate = false, onOpen }) {
 	return (
 		<section className="tabSection">
 			<div className="tabHeading"><div><h2>{title}</h2><p>Low-friction options first.</p></div></div>
 			<div className="decisionGrid">
-				{loading ? <p className="emptyState">Loading...</p> : items.length ? items.map((item) => <ActivityCard key={item.id} activity={item} showDate={showDate} />) : <p className="emptyState">Nothing matched yet.</p>}
+				{loading ? <p className="emptyState">Loading...</p> : items.length ? items.map((item) => <ActivityCard key={item.id} activity={item} showDate={showDate} onOpen={onOpen} />) : <p className="emptyState">Nothing matched yet.</p>}
 			</div>
 		</section>
 	)

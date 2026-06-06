@@ -86,12 +86,3 @@ export function byDateTime(a, b) {
 	const bValue = `${b.activity_date || ''} ${b.start_time || ''}`
 	return aValue.localeCompare(bValue)
 }
-
-export function groupBy(items, key) {
-	return items.reduce((acc, item) => {
-		const groupKey = item?.[key] || 'Unsorted'
-		acc[groupKey] = acc[groupKey] || []
-		acc[groupKey].push(item)
-		return acc
-	}, {})
-}

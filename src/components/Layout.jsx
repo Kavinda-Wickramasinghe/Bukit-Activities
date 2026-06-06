@@ -1,12 +1,7 @@
 import { useState } from 'react'
 
 const tabs = ['Dashboard', 'Today', 'This Week', 'Admin']
-const tabIcons = {
-	Dashboard: '🏠',
-	Today: '☀️',
-	'This Week': '📅',
-	Admin: '⚙️',
-}
+const quickAreas = ['Uluwatu', 'Ungasan', 'Jimbaran', 'Bingin']
 
 export default function Layout({ activeTab, onTabChange, children }) {
 	const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -18,34 +13,65 @@ export default function Layout({ activeTab, onTabChange, children }) {
 
 	return (
 		<div className={`appShell ${sidebarOpen ? 'sidebarOpen' : ''}`}>
-			<button
-				type="button"
-				className={`menuButton ${sidebarOpen ? 'hidden' : ''}`}
-				aria-label="Open navigation"
-				onClick={() => setSidebarOpen(true)}
-			>
-				<span />
-				<span />
-				<span />
-			</button>
 			<div className="backdrop" onClick={() => setSidebarOpen(false)} aria-hidden="true" />
+
 			<aside className="sidebar">
-				<button type="button" className="closeButton" aria-label="Close navigation" onClick={() => setSidebarOpen(false)}>×</button>
-				<div className="brandBlock">
-					<p className="eyebrow">🌊 Private Dashboard</p>
-					<h1>Bukit Activity</h1>
-					<p className="brandNote">A fast read on what is worth doing around Uluwatu, Ungasan, Jimbaran, Pecatu, Bingin, and nearby Bukit spots.</p>
+				
+				<div className="sidebarBody">
+					<section className="sidebarSection">
+						<p className="sidebarSectionTitle">Workspace</p>
+						<nav className="sideNav" aria-label="Bukit Activity OS sections">
+							{tabs.map((tab) => (
+								<a
+									key={tab}
+									href={`#${tab.toLowerCase().replace(/\s+/g, '-')}`}
+									className={`navTab ${activeTab === tab ? 'active' : ''}`}
+									aria-current={activeTab === tab ? 'page' : undefined}
+									onClick={(event) => {
+										event.preventDefault()
+										selectTab(tab)
+									}}
+								>
+									<span>{tab}</span>
+								</a>
+							))}
+						</nav>
+					</section>
+
+					<section className="sidebarSection">
+						<p className="sidebarSectionTitle">Quick Areas</p>
+						<div className="areaList">
+							{quickAreas.map((area) => <span key={area}>{area}</span>)}
+						</div>
+					</section>
+
+					<div className="sidebarSpacer" />
+
+					<section className="sidebarHint">
+						<strong>Today first</strong>
+						<span>Use Dashboard and Today to decide fast. Use Admin only when updating data.</span>
+					</section>
 				</div>
-				<nav className="sideNav" aria-label="Bukit Activity OS sections">
-					{tabs.map((tab) => (
-						<button key={tab} type="button" className={`navTab ${activeTab === tab ? 'active' : ''}`} onClick={() => selectTab(tab)}>
-							<span className="navIcon" aria-hidden="true">{tabIcons[tab]}</span>
-							<span>{tab}</span>
-						</button>
-					))}
-				</nav>
 			</aside>
-			<main className="content">{children}</main>
+
+			<div className="mainColumn">
+				<header className="topBar">
+					<div className="topBarTitle">
+						<button
+							type="button"
+							className="menuButton"
+							aria-label={sidebarOpen ? 'Hide navigation' : 'Show navigation'}
+							onClick={() => setSidebarOpen((current) => !current)}
+						>
+							<span />
+							<span />
+							<span />
+						</button>
+						<h1>{activeTab}</h1>
+					</div>
+				</header>
+				<main className="content">{children}</main>
+			</div>
 		</div>
 	)
 }
