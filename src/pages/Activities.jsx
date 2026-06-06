@@ -93,7 +93,7 @@ export default function Activities({ setToast }) {
 					{ key: 'status', label: 'Status', render: (row) => display(row.status) },
 					{ key: 'why_jon_might_care', label: 'Why Jon Might Care' },
 					{ key: 'venue_links', label: 'Venue Links', render: (row) => <VenueLinks row={row} /> },
-					{ key: 'actions', label: 'Actions', render: (row) => <div className="tableActions"><ExternalLink href={row.booking_link || row.source_link}>Open</ExternalLink><button type="button" className="tableButton" onClick={() => setEditing(row)}>Edit</button><button type="button" className="tableButton" onClick={() => updateStatus(row, 'archived')}>Archive</button><button type="button" className="tableButton" onClick={() => updateStatus(row, 'cancelled')}>Cancel</button><button type="button" className="tableButton dangerButton" onClick={() => deleteActivity(row)}>Delete</button></div> },
+					{ key: 'actions', label: 'Actions', render: (row) => <div className="tableActions"><IconLink href={row.booking_link || row.source_link} label="Open booking or source">↗</IconLink><IconButton label="Edit activity" onClick={() => setEditing(row)}>✎</IconButton><IconButton label="Archive activity" onClick={() => updateStatus(row, 'archived')}>□</IconButton><IconButton label="Cancel activity" onClick={() => updateStatus(row, 'cancelled')}>!</IconButton><IconButton label="Delete activity" danger onClick={() => deleteActivity(row)}>×</IconButton></div> },
 				]} />
 			</section>
 		</>
@@ -103,11 +103,28 @@ export default function Activities({ setToast }) {
 function VenueLinks({ row }) {
 	return (
 		<div className="tableActions">
-			<ExternalLink href={row.venue_website}>Web</ExternalLink>
-			<ExternalLink href={row.venue_instagram}>IG</ExternalLink>
-			<ExternalLink href={row.venue_whatsapp}>WA</ExternalLink>
-			<ExternalLink href={row.venue_google_maps_link}>Map</ExternalLink>
+			<IconLink href={row.venue_website} label="Open website">⌂</IconLink>
+			<IconLink href={row.venue_instagram} label="Open Instagram">◎</IconLink>
+			<IconLink href={row.venue_whatsapp} label="Open WhatsApp">✆</IconLink>
+			<IconLink href={row.venue_google_maps_link} label="Open map">⌖</IconLink>
 		</div>
+	)
+}
+
+function IconButton({ label, danger = false, onClick, children }) {
+	return (
+		<button type="button" className={`iconButton ${danger ? 'dangerButton' : ''}`} aria-label={label} title={label} onClick={onClick}>
+			{children}
+		</button>
+	)
+}
+
+function IconLink({ href, label, children }) {
+	if (!href) return <span className="iconButton disabled" title={label}>{children}</span>
+	return (
+		<ExternalLink href={href}>
+			<span className="iconLinkInner" aria-label={label} title={label}>{children}</span>
+		</ExternalLink>
 	)
 }
 

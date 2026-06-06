@@ -33,7 +33,7 @@ export default function Layout({ activeTab, onTabChange, children }) {
 				<button type="button" className="closeButton" aria-label="Close navigation" onClick={() => setSidebarOpen(false)}>×</button>
 				<div className="brandBlock">
 					<p className="eyebrow">🌊 Private Dashboard</p>
-					<h1>Bukit Activity OS</h1>
+					<h1>Bukit Activity</h1>
 					<p className="brandNote">A fast read on what is worth doing around Uluwatu, Ungasan, Jimbaran, Pecatu, Bingin, and nearby Bukit spots.</p>
 				</div>
 				<nav className="sideNav" aria-label="Bukit Activity OS sections">

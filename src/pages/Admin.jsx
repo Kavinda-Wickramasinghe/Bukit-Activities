@@ -159,9 +159,9 @@ export default function Admin({ setToast }) {
 						{ key: 'venue_links', label: 'Venue Links', render: (row) => <VenueLinks row={row} /> },
 						{ key: 'actions', label: 'Actions', render: (row) => (
 							<div className="tableActions">
-								<ExternalLink href={row.booking_link || row.source_link}>Open</ExternalLink>
-								<button type="button" className="tableButton" onClick={() => startEdit(row)}>Edit</button>
-								<button type="button" className="tableButton dangerButton" onClick={() => deleteRecord('activities', row, 'Activity', row.title)}>Delete</button>
+								<IconLink href={row.booking_link || row.source_link} label="Open booking or source">↗</IconLink>
+								<IconButton label="Edit activity" onClick={() => startEdit(row)}>✎</IconButton>
+								<IconButton label="Delete activity" danger onClick={() => deleteRecord('activities', row, 'Activity', row.title)}>×</IconButton>
 							</div>
 						) },
 					]} />
@@ -182,8 +182,8 @@ export default function Admin({ setToast }) {
 						{ key: 'last_checked', label: 'Last Checked', render: (row) => formatDate(row.last_checked) },
 						{ key: 'actions', label: 'Actions', render: (row) => (
 							<div className="tableActions">
-								<button type="button" className="tableButton" onClick={() => startEdit(row)}>Edit</button>
-								<button type="button" className="tableButton dangerButton" onClick={() => deleteRecord('venues', row, 'Venue', row.name)}>Delete</button>
+								<IconButton label="Edit venue" onClick={() => startEdit(row)}>✎</IconButton>
+								<IconButton label="Delete venue" danger onClick={() => deleteRecord('venues', row, 'Venue', row.name)}>×</IconButton>
 							</div>
 						) },
 					]} />
@@ -203,8 +203,8 @@ export default function Admin({ setToast }) {
 						{ key: 'last_checked', label: 'Last Checked', render: (row) => formatDate(row.last_checked) },
 						{ key: 'actions', label: 'Actions', render: (row) => (
 							<div className="tableActions">
-								<button type="button" className="tableButton" onClick={() => startEdit(row)}>Edit</button>
-								<button type="button" className="tableButton dangerButton" onClick={() => deleteRecord('whatsapp_sources', row, 'WhatsApp source', row.group_name)}>Delete</button>
+								<IconButton label="Edit WhatsApp source" onClick={() => startEdit(row)}>✎</IconButton>
+								<IconButton label="Delete WhatsApp source" danger onClick={() => deleteRecord('whatsapp_sources', row, 'WhatsApp source', row.group_name)}>×</IconButton>
 							</div>
 						) },
 					]} />
@@ -227,9 +227,9 @@ export default function Admin({ setToast }) {
 							const activity = activityById[row.activity_id]
 							return (
 								<div className="tableActions">
-									<ExternalLink href={activity?.booking_link || activity?.source_link}>Open</ExternalLink>
-									<button type="button" className="tableButton" onClick={() => startEdit(row)}>Edit</button>
-									<button type="button" className="tableButton dangerButton" onClick={() => deleteRecord('weekly_picks', row, 'Weekly pick', row.custom_title || row.pick_type)}>Delete</button>
+									<IconLink href={activity?.booking_link || activity?.source_link} label="Open activity link">↗</IconLink>
+									<IconButton label="Edit weekly pick" onClick={() => startEdit(row)}>✎</IconButton>
+									<IconButton label="Delete weekly pick" danger onClick={() => deleteRecord('weekly_picks', row, 'Weekly pick', row.custom_title || row.pick_type)}>×</IconButton>
 								</div>
 							)
 						} },
@@ -243,11 +243,34 @@ export default function Admin({ setToast }) {
 function VenueLinks({ row }) {
 	return (
 		<div className="tableActions">
-			<ExternalLink href={row.venue_website}>Web</ExternalLink>
-			<ExternalLink href={row.venue_instagram}>IG</ExternalLink>
-			<ExternalLink href={row.venue_whatsapp}>WA</ExternalLink>
-			<ExternalLink href={row.venue_google_maps_link}>Map</ExternalLink>
+			<IconLink href={row.venue_website} label="Open website">⌂</IconLink>
+			<IconLink href={row.venue_instagram} label="Open Instagram">◎</IconLink>
+			<IconLink href={row.venue_whatsapp} label="Open WhatsApp">✆</IconLink>
+			<IconLink href={row.venue_google_maps_link} label="Open map">⌖</IconLink>
 		</div>
+	)
+}
+
+function IconButton({ label, danger = false, onClick, children }) {
+	return (
+		<button
+			type="button"
+			className={`iconButton ${danger ? 'dangerButton' : ''}`}
+			aria-label={label}
+			title={label}
+			onClick={onClick}
+		>
+			{children}
+		</button>
+	)
+}
+
+function IconLink({ href, label, children }) {
+	if (!href) return <span className="iconButton disabled" title={label}>{children}</span>
+	return (
+		<ExternalLink href={href}>
+			<span className="iconLinkInner" aria-label={label} title={label}>{children}</span>
+		</ExternalLink>
 	)
 }
 

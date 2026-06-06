@@ -57,11 +57,11 @@ export default function Dashboard({ setToast }) {
 			</section>
 			<QuickFilters activeFilter={quickFilter} onChange={setQuickFilter} />
 			<section className="statsGrid">
-				<StatCard label="☀️ Today" value={stats.today} hint="options live now" />
-				<StatCard label="📅 This Week" value={stats.week} hint="next 7 days" />
-				<StatCard label="⭐ Featured" value={stats.featured} hint="worth a look" />
-				<StatCard label="📍 Venues" value={stats.venues} hint="places tracked" />
-				<StatCard label="💬 WhatsApp" value={stats.sources} hint="sources to check" />
+				<StatCard label="Today" value={stats.today} hint="options live now" />
+				<StatCard label="This Week" value={stats.week} hint="next 7 days" />
+				<StatCard label="Featured" value={stats.featured} hint="worth a look" />
+				<StatCard label="Venues" value={stats.venues} hint="places tracked" />
+				<StatCard label="WhatsApp" value={stats.sources} hint="sources to check" />
 			</section>
 			<DecisionSection title="☀️ What's Good Today" loading={loading} items={filteredToday} />
 			<DecisionSection title="📅 This Week Highlights" loading={loading} items={filteredWeek} showDate />
