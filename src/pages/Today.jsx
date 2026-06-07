@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import DataTable from '../components/DataTable'
 import ExternalLink from '../components/ExternalLink'
 import RecurringBadge from '../components/RecurringBadge'
-import { supabase } from '../lib/supabaseClient'
-import { dateKey, display, formatTime } from '../lib/helpers'
+import VenueLinks from '../components/VenueLinks'
+import { notifyError } from '../lib/errors'
+import { display, formatTime } from '../lib/helpers'
+import { getActiveTodayActivities } from '../services/activities'
 
 export default function Today({ setToast, refreshKey }) {
 	const [rows, setRows] = useState([])
@@ -12,15 +14,14 @@ export default function Today({ setToast, refreshKey }) {
 	useEffect(() => {
 		async function load() {
 			setLoading(true)
-			const { data, error } = await supabase
-				.from('activities_with_venues')
-				.select('*')
-				.eq('status', 'active')
-				.eq('activity_date', dateKey())
-				.order('start_time', { ascending: true })
-			if (error) setToast({ type: 'error', text: error.message })
-			setRows(data || [])
-			setLoading(false)
+			try {
+				setRows(await getActiveTodayActivities())
+			} catch (error) {
+				notifyError(setToast, error, 'Could not load today activities.')
+				setRows([])
+			} finally {
+				setLoading(false)
+			}
 		}
 		load()
 	}, [setToast, refreshKey])
@@ -42,16 +43,5 @@ export default function Today({ setToast, refreshKey }) {
 				]} />
 			</section>
 		</>
-	)
-}
-
-function VenueLinks({ row }) {
-	return (
-		<div className="tableActions">
-			<ExternalLink href={row.venue_website}>Web</ExternalLink>
-			<ExternalLink href={row.venue_instagram}>IG</ExternalLink>
-			<ExternalLink href={row.venue_whatsapp}>WA</ExternalLink>
-			<ExternalLink href={row.venue_google_maps_link}>Map</ExternalLink>
-		</div>
 	)
 }

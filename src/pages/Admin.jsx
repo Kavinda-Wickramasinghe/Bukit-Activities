@@ -1,64 +1,27 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import AdminTable from '../components/AdminTable'
 import ActivityForm from '../components/ActivityForm'
 import DataTable from '../components/DataTable'
 import ExternalLink from '../components/ExternalLink'
+import VenueLinks from '../components/VenueLinks'
 import VenueForm from '../components/VenueForm'
 import WhatsAppSourceForm from '../components/WhatsAppSourceForm'
 import WeeklyPickForm from '../components/WeeklyPickForm'
 import RecurringBadge from '../components/RecurringBadge'
+import useAdminData from '../hooks/useAdminData'
 import { notifyError } from '../lib/errors'
 import { display, formatDate, formatDateTime, formatTime } from '../lib/helpers'
-import { supabase } from '../lib/supabaseClient'
+import { archiveActivity } from '../services/activities'
+import { deleteAdminRecord, upsertAdminRecord } from '../services/adminRecords'
 
 const adminTabs = ['Add Activity', 'Add Venue', 'Add WhatsApp Source', 'Add Weekly Pick']
 
 export default function Admin({ setToast, refreshKey }) {
 	const [activeForm, setActiveForm] = useState(adminTabs[0])
-	const [activities, setActivities] = useState([])
-	const [venues, setVenues] = useState([])
-	const [sources, setSources] = useState([])
-	const [picks, setPicks] = useState([])
 	const [editing, setEditing] = useState(null)
-	const [loading, setLoading] = useState(true)
 	const [formVersion, setFormVersion] = useState(0)
 	const [activityStatusFilter, setActivityStatusFilter] = useState('all')
-
-	async function loadAdminData() {
-		setLoading(true)
-		try {
-			const [activitiesResult, venuesResult, sourcesResult, picksResult] = await Promise.all([
-				supabase.from('activities_with_venues').select('*').order('activity_date', { ascending: true }).order('start_time', { ascending: true }),
-				supabase.from('venues').select('*').order('name', { ascending: true }),
-				supabase.from('whatsapp_sources').select('*').order('group_name', { ascending: true }),
-				supabase.from('weekly_picks').select('*').order('week_start_date', { ascending: false }),
-			])
-
-			const error = [activitiesResult, venuesResult, sourcesResult, picksResult].find((result) => result.error)?.error
-			if (error) {
-				notifyError(setToast, error, 'Could not load admin data.')
-				setActivities([])
-				setVenues([])
-				setSources([])
-				setPicks([])
-				return
-			}
-
-			setActivities(activitiesResult.data || [])
-			setVenues(venuesResult.data || [])
-			setSources(sourcesResult.data || [])
-			setPicks(picksResult.data || [])
-		} catch (error) {
-			notifyError(setToast, error, 'Could not load admin data.')
-			setActivities([])
-			setVenues([])
-			setSources([])
-			setPicks([])
-		} finally {
-			setLoading(false)
-		}
-	}
-
-	useEffect(() => { loadAdminData() }, [refreshKey])
+	const { activities, venues, sources, picks, loading, reload } = useAdminData(setToast, refreshKey)
 
 	const activityById = useMemo(() => Object.fromEntries(activities.map((activity) => [activity.id, activity])), [activities])
 	const visibleActivities = useMemo(() => {
@@ -74,17 +37,11 @@ export default function Admin({ setToast, refreshKey }) {
 
 	async function saveRecord(table, payload, label) {
 		try {
-			const request = editing
-				? supabase.from(table).update(payload).eq('id', editing.id)
-				: supabase.from(table).insert([payload])
-
-			const { error } = await request
-			if (error) return notifyError(setToast, error, `Could not save ${label.toLowerCase()}.`)
-
+			await upsertAdminRecord(table, payload, editing?.id)
 			setToast({ type: 'success', text: editing ? `${label} updated.` : `${label} added.` })
 			setEditing(null)
 			setFormVersion((current) => current + 1)
-			await loadAdminData()
+			await reload()
 		} catch (error) {
 			notifyError(setToast, error, `Could not save ${label.toLowerCase()}.`)
 		}
@@ -93,17 +50,30 @@ export default function Admin({ setToast, refreshKey }) {
 	async function deleteRecord(table, row, label, name) {
 		if (!window.confirm(`Delete ${name || label}?`)) return
 		try {
-			const { error } = await supabase.from(table).delete().eq('id', row.id)
-			if (error) return notifyError(setToast, error, `Could not delete ${label.toLowerCase()}.`)
-
+			await deleteAdminRecord(table, row.id)
 			setToast({ type: 'success', text: `${label} deleted.` })
 			if (editing?.id === row.id) {
 				setEditing(null)
 				setFormVersion((current) => current + 1)
 			}
-			await loadAdminData()
+			await reload()
 		} catch (error) {
 			notifyError(setToast, error, `Could not delete ${label.toLowerCase()}.`)
+		}
+	}
+
+	async function archiveActivityRecord(row) {
+		if (!window.confirm(`Archive ${row.title || 'this activity'}? It will stay visible in Admin under Archived.`)) return
+		try {
+			await archiveActivity(row.id)
+			setToast({ type: 'success', text: 'Activity archived.' })
+			if (editing?.id === row.id) {
+				setEditing(null)
+				setFormVersion((current) => current + 1)
+			}
+			await reload()
+		} catch (error) {
+			notifyError(setToast, error, 'Could not archive activity.')
 		}
 	}
 
@@ -198,7 +168,7 @@ export default function Admin({ setToast, refreshKey }) {
 						{ key: 'actions', label: 'Actions', render: (row) => (
 							<div className="tableActions">
 								<button type="button" className="tableButton" onClick={() => startEdit(row)}>Edit</button>
-								<button type="button" className="tableButton dangerButton" onClick={() => deleteRecord('activities', row, 'Activity', row.title)}>Delete</button>
+								<button type="button" className="tableButton dangerButton" onClick={() => archiveActivityRecord(row)}>Archive</button>
 							</div>
 						) },
 					]} />
@@ -274,31 +244,5 @@ export default function Admin({ setToast, refreshKey }) {
 				</AdminTable>
 			)}
 		</>
-	)
-}
-
-function VenueLinks({ row }) {
-	return (
-		<div className="tableActions">
-			<ExternalLink href={row.venue_website}>Web</ExternalLink>
-			<ExternalLink href={row.venue_instagram}>IG</ExternalLink>
-			<ExternalLink href={row.venue_whatsapp}>WA</ExternalLink>
-			<ExternalLink href={row.venue_google_maps_link}>Map</ExternalLink>
-		</div>
-	)
-}
-
-function AdminTable({ title, count, actions, children }) {
-	return (
-		<section className="tabSection">
-			<div className="tabHeading">
-				<div>
-					<h2>{title}</h2>
-					<p>{count} record{count === 1 ? '' : 's'} available to edit or delete</p>
-				</div>
-				{actions}
-			</div>
-			{children}
-		</section>
 	)
 }

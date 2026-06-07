@@ -3,8 +3,12 @@ import ActivityCard from '../components/ActivityCard'
 import ActivityDetailsModal from '../components/ActivityDetailsModal'
 import QuickFilters from '../components/QuickFilters'
 import StatCard from '../components/StatCard'
-import { supabase } from '../lib/supabaseClient'
-import { addCalendarDays, byDateTime, dateKey, endOfWeekSunday, formatDate, startOfWeekMonday, textMatches } from '../lib/helpers'
+import { notifyError } from '../lib/errors'
+import { byDateTime, endOfWeekSunday, formatDate, formatDateTime, startOfWeekMonday, textMatches } from '../lib/helpers'
+import { getActiveDashboardWeekActivities, getActiveTodayActivities, getFeaturedActivityCount } from '../services/activities'
+import { getVenueCount } from '../services/venues'
+import { getWhatsAppSourceCount } from '../services/whatsappSources'
+import { getRecentWeeklyPicksWithActivities } from '../services/weeklyPicks'
 
 export default function Dashboard({ setToast, refreshKey }) {
 	const [loading, setLoading] = useState(true)
@@ -18,30 +22,34 @@ export default function Dashboard({ setToast, refreshKey }) {
 	useEffect(() => {
 		async function loadDashboard() {
 			setLoading(true)
-			const todayKey = dateKey()
-			const tomorrowKey = dateKey(addCalendarDays(new Date(), 1))
-			const weekEndKey = dateKey(endOfWeekSunday())
-			const [todayResult, weekResult, picksResult, featuredResult, venuesResult, sourcesResult] = await Promise.all([
-				supabase.from('activities_with_venues').select('*').eq('status', 'active').eq('activity_date', todayKey).order('start_time', { ascending: true }),
-				supabase.from('activities_with_venues').select('*').eq('status', 'active').gte('activity_date', tomorrowKey).lte('activity_date', weekEndKey).order('activity_date', { ascending: true }).order('start_time', { ascending: true }),
-				supabase.from('weekly_picks').select('*').order('week_start_date', { ascending: false }).limit(8),
-				supabase.from('activities').select('id', { count: 'exact', head: true }).eq('status', 'active').eq('is_featured', true),
-				supabase.from('venues').select('id', { count: 'exact', head: true }),
-				supabase.from('whatsapp_sources').select('id', { count: 'exact', head: true }),
-			])
-			const error = [todayResult, weekResult, picksResult, featuredResult, venuesResult, sourcesResult].find((result) => result.error)?.error
-			if (error) setToast({ type: 'error', text: error.message })
-			setToday(todayResult.data || [])
-			setWeek(weekResult.data || [])
-			setPicks(picksResult.data || [])
-			setStats({
-				today: todayResult.data?.length || 0,
-				week: weekResult.data?.length || 0,
-				featured: featuredResult.count || 0,
-				venues: venuesResult.count || 0,
-				sources: sourcesResult.count || 0,
-			})
-			setLoading(false)
+			try {
+				const [todayData, weekData, picksData, featuredCount, venuesCount, sourcesCount] = await Promise.all([
+					getActiveTodayActivities(),
+					getActiveDashboardWeekActivities(),
+					getRecentWeeklyPicksWithActivities(8),
+					getFeaturedActivityCount(),
+					getVenueCount(),
+					getWhatsAppSourceCount(),
+				])
+				setToday(todayData)
+				setWeek(weekData)
+				setPicks(picksData)
+				setStats({
+					today: todayData.length,
+					week: weekData.length,
+					featured: featuredCount,
+					venues: venuesCount,
+					sources: sourcesCount,
+				})
+			} catch (error) {
+				notifyError(setToast, error, 'Could not load dashboard.')
+				setToday([])
+				setWeek([])
+				setPicks([])
+				setStats({ today: 0, week: 0, featured: 0, venues: 0, sources: 0 })
+			} finally {
+				setLoading(false)
+			}
 		}
 		loadDashboard()
 	}, [setToast, refreshKey])
@@ -69,7 +77,8 @@ export default function Dashboard({ setToast, refreshKey }) {
 					{loading ? <p className="emptyState">Loading...</p> : picks.length ? picks.map((pick) => (
 						<article className="decisionCard" key={pick.id}>
 							<div className="cardTopline"><span>{pick.pick_type}</span><span>{pick.week_start_date}</span></div>
-							<h3>{pick.custom_title || 'Linked activity pick'}</h3>
+							<h3>{pick.custom_title || pick.activity?.title || 'Linked activity pick'}</h3>
+							{pick.activity && <p>{pick.activity.venue_name} · {formatDateTime(pick.activity.activity_date, pick.activity.start_time)}</p>}
 							{pick.reason && <p>{pick.reason}</p>}
 						</article>
 					)) : <p className="emptyState">No picks yet.</p>}

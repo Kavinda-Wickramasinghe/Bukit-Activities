@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import DataTable from '../components/DataTable'
 import ExternalLink from '../components/ExternalLink'
 import RecurringBadge from '../components/RecurringBadge'
-import { supabase } from '../lib/supabaseClient'
-import { byDateTime, dateKey, endOfWeekSunday, formatDate, formatTime, startOfWeekMonday } from '../lib/helpers'
+import VenueLinks from '../components/VenueLinks'
+import { notifyError } from '../lib/errors'
+import { byDateTime, formatDate, formatTime } from '../lib/helpers'
+import { getActiveCalendarWeekActivities } from '../services/activities'
 
 export default function ThisWeek({ setToast, refreshKey }) {
 	const [rows, setRows] = useState([])
@@ -12,19 +14,14 @@ export default function ThisWeek({ setToast, refreshKey }) {
 	useEffect(() => {
 		async function load() {
 			setLoading(true)
-			const weekStartKey = dateKey(startOfWeekMonday())
-			const weekEndKey = dateKey(endOfWeekSunday())
-			const { data, error } = await supabase
-				.from('activities_with_venues')
-				.select('*')
-				.eq('status', 'active')
-				.gte('activity_date', weekStartKey)
-				.lte('activity_date', weekEndKey)
-				.order('activity_date', { ascending: true })
-				.order('start_time', { ascending: true })
-			if (error) setToast({ type: 'error', text: error.message })
-			setRows(data || [])
-			setLoading(false)
+			try {
+				setRows(await getActiveCalendarWeekActivities())
+			} catch (error) {
+				notifyError(setToast, error, 'Could not load this week activities.')
+				setRows([])
+			} finally {
+				setLoading(false)
+			}
 		}
 		load()
 	}, [setToast, refreshKey])
@@ -49,16 +46,5 @@ export default function ThisWeek({ setToast, refreshKey }) {
 				]} />
 			</section>
 		</>
-	)
-}
-
-function VenueLinks({ row }) {
-	return (
-		<div className="tableActions">
-			<ExternalLink href={row.venue_website}>Web</ExternalLink>
-			<ExternalLink href={row.venue_instagram}>IG</ExternalLink>
-			<ExternalLink href={row.venue_whatsapp}>WA</ExternalLink>
-			<ExternalLink href={row.venue_google_maps_link}>Map</ExternalLink>
-		</div>
 	)
 }

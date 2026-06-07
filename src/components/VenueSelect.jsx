@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { display } from '../lib/helpers'
 import { getErrorMessage } from '../lib/errors'
-import { supabase } from '../lib/supabaseClient'
+import { getVenues } from '../services/venues'
 import ExternalLink from './ExternalLink'
 
 export default function VenueSelect({ value, onChange }) {
@@ -13,16 +13,11 @@ export default function VenueSelect({ value, onChange }) {
 		async function loadVenues() {
 			setLoading(true)
 			setError('')
-			const { data, error: venueError } = await supabase
-				.from('venues')
-				.select('*')
-				.order('name', { ascending: true })
-
-			if (venueError) {
-				setError(getErrorMessage(venueError, 'Could not load venues'))
+			try {
+				setVenues(await getVenues())
+			} catch (venueError) {
+				setError(getErrorMessage(venueError, 'Could not load venues.'))
 				setVenues([])
-			} else {
-				setVenues(data || [])
 			}
 			setLoading(false)
 		}
