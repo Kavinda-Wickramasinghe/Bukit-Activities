@@ -21,6 +21,7 @@ export default function Admin({ setToast, refreshKey }) {
 	const [editing, setEditing] = useState(null)
 	const [loading, setLoading] = useState(true)
 	const [formVersion, setFormVersion] = useState(0)
+	const [activityStatusFilter, setActivityStatusFilter] = useState('all')
 
 	async function loadAdminData() {
 		setLoading(true)
@@ -60,6 +61,10 @@ export default function Admin({ setToast, refreshKey }) {
 	useEffect(() => { loadAdminData() }, [refreshKey])
 
 	const activityById = useMemo(() => Object.fromEntries(activities.map((activity) => [activity.id, activity])), [activities])
+	const visibleActivities = useMemo(() => {
+		if (activityStatusFilter === 'all') return activities
+		return activities.filter((activity) => activity.status === activityStatusFilter)
+	}, [activities, activityStatusFilter])
 
 	function changeForm(tab) {
 		setActiveForm(tab)
@@ -162,8 +167,22 @@ export default function Admin({ setToast, refreshKey }) {
 			</section>
 
 			{activeForm === 'Add Activity' && (
-				<AdminTable title="Available Activities" count={activities.length}>
-					<DataTable loading={loading} rows={activities} emptyText="No activities yet." columns={[
+				<AdminTable
+					title="Available Activities"
+					count={visibleActivities.length}
+					actions={(
+						<div className="field min-w-44">
+							<label htmlFor="activity-status-filter">Status</label>
+							<select id="activity-status-filter" value={activityStatusFilter} onChange={(event) => setActivityStatusFilter(event.target.value)}>
+								<option value="all">All</option>
+								<option value="active">Active</option>
+								<option value="archived">Archived</option>
+								<option value="cancelled">Cancelled</option>
+							</select>
+						</div>
+					)}
+				>
+					<DataTable loading={loading} rows={visibleActivities} emptyText="No activities match this status." columns={[
 						{ key: 'title', label: 'Title' },
 						{ key: 'venue_name', label: 'Venue' },
 						{ key: 'venue_area', label: 'Venue Area', render: (row) => display(row.venue_area || row.area) },
@@ -269,7 +288,7 @@ function VenueLinks({ row }) {
 	)
 }
 
-function AdminTable({ title, count, children }) {
+function AdminTable({ title, count, actions, children }) {
 	return (
 		<section className="tabSection">
 			<div className="tabHeading">
@@ -277,6 +296,7 @@ function AdminTable({ title, count, children }) {
 					<h2>{title}</h2>
 					<p>{count} record{count === 1 ? '' : 's'} available to edit or delete</p>
 				</div>
+				{actions}
 			</div>
 			{children}
 		</section>

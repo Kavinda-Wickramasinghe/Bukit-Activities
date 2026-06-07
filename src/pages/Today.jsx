@@ -15,6 +15,7 @@ export default function Today({ setToast, refreshKey }) {
 			const { data, error } = await supabase
 				.from('activities_with_venues')
 				.select('*')
+				.eq('status', 'active')
 				.eq('activity_date', dateKey())
 				.order('start_time', { ascending: true })
 			if (error) setToast({ type: 'error', text: error.message })
@@ -42,10 +43,6 @@ export default function Today({ setToast, refreshKey }) {
 			</section>
 		</>
 	)
-}
-
-function Hero({ label, title, text }) {
-	return <section className="heroCard"><div><p className="heroLabel">{label}</p><h2>{title}</h2><p className="heroText">{text}</p></div></section>
 }
 
 function VenueLinks({ row }) {

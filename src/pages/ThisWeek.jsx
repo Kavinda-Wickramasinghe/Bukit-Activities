@@ -3,7 +3,7 @@ import DataTable from '../components/DataTable'
 import ExternalLink from '../components/ExternalLink'
 import RecurringBadge from '../components/RecurringBadge'
 import { supabase } from '../lib/supabaseClient'
-import { addCalendarDays, byDateTime, dateKey, formatDate, formatTime } from '../lib/helpers'
+import { byDateTime, dateKey, endOfWeekSunday, formatDate, formatTime, startOfWeekMonday } from '../lib/helpers'
 
 export default function ThisWeek({ setToast, refreshKey }) {
 	const [rows, setRows] = useState([])
@@ -12,12 +12,13 @@ export default function ThisWeek({ setToast, refreshKey }) {
 	useEffect(() => {
 		async function load() {
 			setLoading(true)
-			const todayKey = dateKey()
-			const weekEndKey = dateKey(addCalendarDays(new Date(), 7))
+			const weekStartKey = dateKey(startOfWeekMonday())
+			const weekEndKey = dateKey(endOfWeekSunday())
 			const { data, error } = await supabase
 				.from('activities_with_venues')
 				.select('*')
-				.gte('activity_date', todayKey)
+				.eq('status', 'active')
+				.gte('activity_date', weekStartKey)
 				.lte('activity_date', weekEndKey)
 				.order('activity_date', { ascending: true })
 				.order('start_time', { ascending: true })

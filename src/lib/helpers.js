@@ -58,6 +58,19 @@ export function addCalendarDays(value, days) {
 	return date
 }
 
+export function startOfWeekMonday(value = new Date()) {
+	const date = new Date(value)
+	date.setHours(0, 0, 0, 0)
+	const day = date.getDay()
+	const offset = day === 0 ? -6 : 1 - day
+	date.setDate(date.getDate() + offset)
+	return date
+}
+
+export function endOfWeekSunday(value = new Date()) {
+	return addCalendarDays(startOfWeekMonday(value), 6)
+}
+
 export function display(value) {
 	return value === null || value === undefined || value === '' ? '-' : String(value)
 }
