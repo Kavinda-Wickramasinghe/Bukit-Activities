@@ -39,4 +39,5 @@ Supabase Row Level Security (RLS)
 
 I added `supabase_policy.sql` with sample policies you can apply in the Supabase SQL editor.
 
-Run Local Host: npm run dev -- --host 0.0.0.0
+Run Local Host: 
+npm run dev -- --host 0.0.0.0

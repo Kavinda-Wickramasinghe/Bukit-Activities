@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dateKey, endOfWeekSunday, startOfWeekMonday } from './helpers'
+import { dateKey, endOfMonth, endOfWeekSunday, startOfMonth, startOfWeekMonday } from './helpers'
 
 describe('calendar week helpers', () => {
 	it('starts the week on Monday', () => {
@@ -13,5 +13,15 @@ describe('calendar week helpers', () => {
 
 	it('ends the week on Sunday', () => {
 		expect(dateKey(endOfWeekSunday(new Date('2026-06-08T12:00:00Z')))).toBe('2026-06-14')
+	})
+})
+
+describe('month helpers', () => {
+	it('finds the first day of the month', () => {
+		expect(dateKey(startOfMonth(new Date('2026-06-10T12:00:00Z')))).toBe('2026-06-01')
+	})
+
+	it('finds the last day of the month', () => {
+		expect(dateKey(endOfMonth(new Date('2026-02-10T12:00:00Z')))).toBe('2026-02-28')
 	})
 })

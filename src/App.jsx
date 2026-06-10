@@ -6,8 +6,8 @@ import { rolloverRecurringActivities } from './lib/recurring'
 import { getErrorMessage } from './lib/errors'
 import Admin from './pages/Admin'
 import Dashboard from './pages/Dashboard'
+import MonthlyEvents from './pages/MonthlyEvents'
 import ThisWeek from './pages/ThisWeek'
-import Today from './pages/Today'
 
 export default function App() {
 	const [activeTab, setActiveTab] = useState('Dashboard')
@@ -58,8 +58,8 @@ export default function App() {
 
 		const props = { setToast, refreshKey }
 		switch (activeTab) {
-			case 'Today':
-				return <Today {...props} />
+			case 'Monthly Events':
+				return <MonthlyEvents {...props} />
 			case 'This Week':
 				return <ThisWeek {...props} />
 			case 'Admin':

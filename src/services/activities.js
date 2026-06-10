@@ -1,4 +1,4 @@
-import { addCalendarDays, dateKey, endOfWeekSunday, startOfWeekMonday } from '../lib/helpers'
+import { addCalendarDays, dateKey, endOfMonth, endOfWeekSunday, startOfMonth, startOfWeekMonday } from '../lib/helpers'
 import { supabase } from '../lib/supabaseClient'
 import { unwrapQuery } from './supabaseService'
 
@@ -40,6 +40,21 @@ export async function getActiveCalendarWeekActivities() {
 			.eq('status', 'active')
 			.gte('activity_date', weekStartKey)
 			.lte('activity_date', weekEndKey)
+			.order('activity_date', { ascending: true })
+			.order('start_time', { ascending: true })
+	)
+	return data
+}
+
+export async function getActiveMonthActivities(value = new Date()) {
+	const monthStartKey = dateKey(startOfMonth(value))
+	const monthEndKey = dateKey(endOfMonth(value))
+	const { data } = await unwrapQuery(
+		activityView()
+			.select('*')
+			.eq('status', 'active')
+			.gte('activity_date', monthStartKey)
+			.lte('activity_date', monthEndKey)
 			.order('activity_date', { ascending: true })
 			.order('start_time', { ascending: true })
 	)

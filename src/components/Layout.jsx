@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-const tabs = ['Dashboard', 'Today', 'This Week', 'Admin']
+const tabs = ['Dashboard', 'Monthly Events', 'This Week', 'Admin']
 const quickAreas = ['Uluwatu', 'Ungasan', 'Jimbaran', 'Bingin']
 
 export default function Layout({ activeTab, onTabChange, children }) {
@@ -48,8 +48,8 @@ export default function Layout({ activeTab, onTabChange, children }) {
 					<div className="sidebarSpacer" />
 
 					<section className="sidebarHint">
-						<strong>Today first</strong>
-						<span>Use Dashboard and Today to decide fast. Use Admin only when updating data.</span>
+						<strong>Month view</strong>
+						<span>Use Monthly Events to scan the month. Use Admin only when updating data.</span>
 					</section>
 				</div>
 			</aside>

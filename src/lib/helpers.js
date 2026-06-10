@@ -71,6 +71,20 @@ export function endOfWeekSunday(value = new Date()) {
 	return addCalendarDays(startOfWeekMonday(value), 6)
 }
 
+export function startOfMonth(value = new Date()) {
+	const date = new Date(value)
+	date.setHours(0, 0, 0, 0)
+	date.setDate(1)
+	return date
+}
+
+export function endOfMonth(value = new Date()) {
+	const date = startOfMonth(value)
+	date.setMonth(date.getMonth() + 1)
+	date.setDate(0)
+	return date
+}
+
 export function display(value) {
 	return value === null || value === undefined || value === '' ? '-' : String(value)
 }
