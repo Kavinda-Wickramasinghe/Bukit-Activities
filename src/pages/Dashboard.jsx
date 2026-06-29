@@ -12,6 +12,7 @@ import { getWhatsAppSourceCount } from '../services/whatsappSources'
 export default function Dashboard({ setToast, refreshKey }) {
 	const [loading, setLoading] = useState(true)
 	const [quickFilter, setQuickFilter] = useState('')
+	const [summaryOpen, setSummaryOpen] = useState(false)
 	const [today, setToday] = useState([])
 	const [week, setWeek] = useState([])
 	const [stats, setStats] = useState({ today: 0, week: 0, featured: 0, venues: 0, sources: 0 })
@@ -55,14 +56,25 @@ export default function Dashboard({ setToast, refreshKey }) {
 
 	return (
 		<div className="dashboardContent">
-			<QuickFilters activeFilter={quickFilter} onChange={setQuickFilter} />
-			<section className="statsGrid">
-				<StatCard label="Today" value={stats.today} hint="options live now" />
-				<StatCard label="This Week" value={stats.week} hint="through Sunday" />
-				<StatCard label="Featured" value={stats.featured} hint="worth a look" />
-				<StatCard label="Venues" value={stats.venues} hint="places tracked" />
-				<StatCard label="WhatsApp" value={stats.sources} hint="sources to check" />
-			</section>
+			<button
+				type="button"
+				className="summaryToggle"
+				aria-expanded={summaryOpen}
+				aria-controls="dashboard-summary"
+				onClick={() => setSummaryOpen((current) => !current)}
+			>
+				{summaryOpen ? 'Hide summary' : 'Show summary'}
+			</button>
+			<div id="dashboard-summary" className={`dashboardSummary ${summaryOpen ? 'open' : ''}`}>
+				<QuickFilters activeFilter={quickFilter} onChange={setQuickFilter} />
+				<section className="statsGrid">
+					<StatCard label="Today" value={stats.today} hint="options live now" />
+					<StatCard label="This Week" value={stats.week} hint="through Sunday" />
+					<StatCard label="Featured" value={stats.featured} hint="worth a look" />
+					<StatCard label="Venues" value={stats.venues} hint="places tracked" />
+					<StatCard label="WhatsApp" value={stats.sources} hint="sources to check" />
+				</section>
+			</div>
 			<DecisionSection title="☀️ What's Good Today" loading={loading} items={filteredToday} onOpen={setSelectedActivity} />
 			<DecisionSection title="📅 This Week Highlights" subtitle={weekPeriod} loading={loading} items={filteredWeek} showDate onOpen={setSelectedActivity} />
 			<ActivityDetailsModal activity={selectedActivity} onClose={() => setSelectedActivity(null)} />
