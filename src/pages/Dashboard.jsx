@@ -4,18 +4,16 @@ import ActivityDetailsModal from '../components/ActivityDetailsModal'
 import QuickFilters from '../components/QuickFilters'
 import StatCard from '../components/StatCard'
 import { notifyError } from '../lib/errors'
-import { byDateTime, endOfWeekSunday, formatDate, formatDateTime, startOfWeekMonday, textMatches } from '../lib/helpers'
+import { byDateTime, endOfWeekSunday, formatDate, startOfWeekMonday, textMatches } from '../lib/helpers'
 import { getActiveDashboardWeekActivities, getActiveTodayActivities, getFeaturedActivityCount } from '../services/activities'
 import { getVenueCount } from '../services/venues'
 import { getWhatsAppSourceCount } from '../services/whatsappSources'
-import { getRecentWeeklyPicksWithActivities } from '../services/weeklyPicks'
 
 export default function Dashboard({ setToast, refreshKey }) {
 	const [loading, setLoading] = useState(true)
 	const [quickFilter, setQuickFilter] = useState('')
 	const [today, setToday] = useState([])
 	const [week, setWeek] = useState([])
-	const [picks, setPicks] = useState([])
 	const [stats, setStats] = useState({ today: 0, week: 0, featured: 0, venues: 0, sources: 0 })
 	const [selectedActivity, setSelectedActivity] = useState(null)
 
@@ -23,17 +21,15 @@ export default function Dashboard({ setToast, refreshKey }) {
 		async function loadDashboard() {
 			setLoading(true)
 			try {
-				const [todayData, weekData, picksData, featuredCount, venuesCount, sourcesCount] = await Promise.all([
+				const [todayData, weekData, featuredCount, venuesCount, sourcesCount] = await Promise.all([
 					getActiveTodayActivities(),
 					getActiveDashboardWeekActivities(),
-					getRecentWeeklyPicksWithActivities(8),
 					getFeaturedActivityCount(),
 					getVenueCount(),
 					getWhatsAppSourceCount(),
 				])
 				setToday(todayData)
 				setWeek(weekData)
-				setPicks(picksData)
 				setStats({
 					today: todayData.length,
 					week: weekData.length,
@@ -45,7 +41,6 @@ export default function Dashboard({ setToast, refreshKey }) {
 				notifyError(setToast, error, 'Could not load dashboard.')
 				setToday([])
 				setWeek([])
-				setPicks([])
 				setStats({ today: 0, week: 0, featured: 0, venues: 0, sources: 0 })
 			} finally {
 				setLoading(false)
@@ -59,8 +54,7 @@ export default function Dashboard({ setToast, refreshKey }) {
 	const weekPeriod = `${formatDate(startOfWeekMonday())} - ${formatDate(endOfWeekSunday())}`
 
 	return (
-		<>
-	
+		<div className="dashboardContent">
 			<QuickFilters activeFilter={quickFilter} onChange={setQuickFilter} />
 			<section className="statsGrid">
 				<StatCard label="Today" value={stats.today} hint="options live now" />
@@ -71,21 +65,8 @@ export default function Dashboard({ setToast, refreshKey }) {
 			</section>
 			<DecisionSection title="☀️ What's Good Today" loading={loading} items={filteredToday} onOpen={setSelectedActivity} />
 			<DecisionSection title="📅 This Week Highlights" subtitle={weekPeriod} loading={loading} items={filteredWeek} showDate onOpen={setSelectedActivity} />
-			<section className="tabSection">
-				<div className="tabHeading"><div><h2>⭐ Jon Picks</h2><p>Weekly picks grouped by intent.</p></div></div>
-				<div className="decisionGrid">
-					{loading ? <p className="emptyState">Loading...</p> : picks.length ? picks.map((pick) => (
-						<article className="decisionCard" key={pick.id}>
-							<div className="cardTopline"><span>{pick.pick_type}</span><span>{pick.week_start_date}</span></div>
-							<h3>{pick.custom_title || pick.activity?.title || 'Linked activity pick'}</h3>
-							{pick.activity && <p>{pick.activity.venue_name} · {formatDateTime(pick.activity.activity_date, pick.activity.start_time)}</p>}
-							{pick.reason && <p>{pick.reason}</p>}
-						</article>
-					)) : <p className="emptyState">No picks yet.</p>}
-				</div>
-			</section>
 			<ActivityDetailsModal activity={selectedActivity} onClose={() => setSelectedActivity(null)} />
-		</>
+		</div>
 	)
 }
 

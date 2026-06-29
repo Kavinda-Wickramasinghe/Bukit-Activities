@@ -41,3 +41,5 @@ I added `supabase_policy.sql` with sample policies you can apply in the Supabase
 
 Run Local Host: 
 npm run dev -- --host 0.0.0.0
+
+Open - 22/6/2026

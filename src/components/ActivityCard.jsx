@@ -7,13 +7,26 @@ export default function ActivityCard({ activity, showDate = false, onOpen }) {
 	const venueCategory = activity.venue_category || activity.category
 
 	return (
-		<article className="decisionCard flex min-h-[230px] flex-col">
+		<article className="decisionCard flex min-h-[210px] flex-col">
 			<div className="cardTopline">
 				<span>{showDate ? formatDateTime(activity.activity_date, activity.start_time) : display(activity.start_time)}</span>
 				<span>{display(venueCategory)}</span>
 			</div>
 			<h3>{display(activity.title)}</h3>
-			<p className="mutedLine">{display(activity.venue_name)} · {display(venueArea)} · {display(activity.cost)}</p>
+			<dl className="cardFacts">
+				<div className="sm:col-span-2">
+					<dt>Place:</dt>
+					<dd>{display(activity.venue_name)}</dd>
+				</div>
+				<div>
+					<dt>Area:</dt>
+					<dd>{display(venueArea)}</dd>
+				</div>
+				<div>
+					<dt>Cost:</dt>
+					<dd>{display(activity.cost)}</dd>
+				</div>
+			</dl>
 			{(activity.is_recurring || activity.is_featured || activity.booking_required) && (
 				<div className="mt-2 flex flex-wrap gap-2">
 					{activity.is_recurring && <RecurringBadge activity={activity} />}
